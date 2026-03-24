@@ -1,5 +1,4 @@
-#ifndef MODELS_USER_HPP
-#define MODELS_USER_HPP
+#pragma once
 
 #include <string>
 #include <chrono>
@@ -15,5 +14,3 @@ namespace models {
         std::chrono::system_clock::time_point created_at;
     };
 }
-
-#endif

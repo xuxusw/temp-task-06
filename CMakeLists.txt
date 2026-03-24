@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12...3.31)
-project(myservice CXX)
+project(myservice CXX)   
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(DownloadUserver)
@@ -17,6 +17,20 @@ if(NOT userver_FOUND)
     download_userver(TRY_DIR third_party/userver)
 endif()
 
+#finding jwt-cpp
+find_package(jwt-cpp QUIET)
+if (NOT jwt-cpp_FOUND)
+  message("Loading JWT-CPP")
+  include(cmake/get_cpm.cmake)
+  # download jwt-cpp
+  CPMAddPackage(
+    NAME jwt-cpp
+    GITHUB_REPOSITORY Thalhammer/jwt-cpp
+    VERSION 0.7.2
+    OPTIONS "JWT_BUILD_EXAMPLES OFF" "JWT_BUILD_TESTS OFF" "JWT_CMAKE_FILES_INSTALL ON"
+  )
+endif()
+
 userver_setup_environment()
 
 # Common sources
@@ -29,6 +43,11 @@ add_library(
     src/hello_postgres.cpp
     src/hello_mongo.cpp
     src/hello_grpc.cpp
+    src/auth/jwt_auth_checker.cpp
+    src/auth/jwt_auth_factory.cpp
+    src/auth/jwt.cpp
+    src/storage/in_memory_storage.cpp
+    src/handlers/auth_handlers.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs
@@ -36,6 +55,15 @@ target_link_libraries(
            userver::grpc
            userver::mongo
            userver::postgresql
+    PUBLIC jwt-cpp::jwt-cpp #
+)
+
+target_include_directories(${PROJECT_NAME}_objs PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/storage
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/handlers
 )
 
 userver_add_grpc_library(${PROJECT_NAME}_proto PROTOS handlers/hello.proto)

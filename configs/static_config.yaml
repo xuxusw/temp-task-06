@@ -91,3 +91,18 @@ components_manager:
 
         handler-hello-grpc:
             task-processor: main-task-processor
+
+        jwt-auth-checker:
+            secret: "secret-key-change-me-later"
+
+        in-memory-storage:
+        
+        handler-register:
+            path: /api/register
+            method: POST
+            task_processor: main-task-processor
+        
+        handler-login:
+            path: /api/login
+            method: POST
+            task_processor: main-task-processor

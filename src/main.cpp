@@ -19,7 +19,16 @@
 #include <hello_mongo.hpp>    
 #include <hello_postgres.hpp> 
 
+#include "auth/jwt_auth_factory.hpp"
+#include "auth/jwt_auth_checker.hpp"
+#include "handlers/auth_handlers.hpp"
+#include "storage/in_memory_storage.hpp"
+
 int main(int argc, char* argv[]) {
+    // auto storage = std::make_shared<myservice::storage::InMemoryStorage>();
+    // auto storage = std::make_shared<myservice::storage::InMemoryStorage>();
+    userver::server::handlers::auth::RegisterAuthCheckerFactory<myservice::auth::JwtAuthCheckerFactory>();
+
     auto component_list =
         userver::components::MinimalServerComponentList()
             .Append<userver::server::handlers::Ping>()
@@ -35,6 +44,10 @@ int main(int argc, char* argv[]) {
             .Append<myservice::HelloMongo>()
             .AppendComponentList(userver::ugrpc::server::MinimalComponentList())
             .Append<myservice::HelloGrpc>()
+            .Append<myservice::auth::JwtAuthComponent>()
+            .Append<myservice::handlers::RegisterHandler>()
+            .Append<myservice::handlers::LoginHandler>()
+            .Append<myservice::storage::InMemoryStorage>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);

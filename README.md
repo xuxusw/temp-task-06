@@ -1,17 +1,26 @@
 # myservice
 
-Template of a C++ service that uses [userver framework](https://github.com/userver-framework/userver).
+Work in progress.
 
+C++ service that uses [userver framework](https://github.com/userver-framework/userver).
 
-## Download and Build
+# JWT Implementation
+Based on: https://github.com/Yadroff/userver_jwt_checker
 
-To create your own userver-based service follow the following steps:
+# Models: 
+* User
+* Project
+* Task
 
-1. Press the "Use this template button" at the top right of this GitHub page
-2. Clone the service `git clone your-service-repo && cd your-service-repo && git submodule update --init`
-3. Give a proper name to your service and replace all the occurrences of "myservice" string with that name
-4. Feel free to tweak, adjust or fully rewrite the source code of your service.
+# Current Endpoints:
+* User /api/register
+* User /api/login
 
+# Technology Stack:
+* C++20 + userver
+* jwt-cpp library v0.7.2 
+* OpenAPI 3.0
+* Docker 
 
 ## Makefile
 
@@ -32,6 +41,5 @@ can also be `debug-custom`, `release-custom`.
 
 ## License
 
-The original template is distributed under the [Apache-2.0 License](https://github.com/userver-framework/userver/blob/develop/LICENSE)
-and [CLA](https://github.com/userver-framework/userver/blob/develop/CONTRIBUTING.md). Services based on the template may change
-the license and CLA.
+Based on the template distributed under the [Apache-2.0 License](https://github.com/userver-framework/userver/blob/develop/LICENSE)
+and [CLA](https://github.com/userver-framework/userver/blob/develop/CONTRIBUTING.md). Services based on the template may change the license and CLA.
