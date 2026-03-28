@@ -1,33 +1,191 @@
 # myservice
 
-C++ service that uses [userver framework](https://github.com/userver-framework/userver).
+REST API сервис для управления проектами и задачами (вариант 8 "Управление проектами").
 
-## JWT Implementation
-Based on: https://github.com/Yadroff/userver_jwt_checker
-
-## Models: 
-* User
-* Project
-* Task
-
-## API Endpoints:
-| Метод | Endpoint | Описание | Аутентификация |
-|-------|----------|----------|----------------|
-| POST | `/api/register` | Регистрация пользователя | Не требуется |
-| POST | `/api/login` | Вход, получение JWT токена | Не требуется |
-| GET | `/api/users/search` | Поиск пользователей по логину или имени/фамилии | Требуется |
-| POST | `/api/projects` | Создание нового проекта | Требуется |
-| GET | `/api/projects` | Получение списка всех проектов | Требуется |
-| POST | `/api/projects/{id}/tasks` | Создание задачи в проекте | Требуется |
+C++ service for project and task management that uses [userver framework](https://github.com/userver-framework/userver).
 
 ## Technology Stack:
-* C++20 + userver
-* jwt-cpp library v0.7.2 
+* C++20 + userver framework
+* JWT Authentication (jwt-cpp v0.7.2)
 * OpenAPI 3.0
 * Docker 
 
-# Testing 
+## Data models  
+### User
+| Field | Data Type | Description |
+|-------|------|-------------|
+| `id` | int | Unique identifier |
+| `login` | string | Unique login |
+| `password_hash` | string | SHA256 hash |
+| `first_name` | string | First name |
+| `last_name` | string | Last name |
+| `email` | string | Email address |
+| `created_at` | datetime | Registration timestamp |
 
+### Project
+| Field | Data Type | Description |
+|-------|------|-------------|
+| `id` | int | Unique identifier |
+| `name` | string | Project name |
+| `description` | string | Project description |
+| `key` | string | Short project code (e.g., "PRJ1") |
+| `owner_id` | int | Creator user ID |
+| `created_at` | datetime | Creation timestamp |
+
+### Task
+| Field | Data Type | Description |
+|-------|------|-------------|
+| `id` | int | Unique identifier |
+| `title` | string | Task title |
+| `description` | string | Task description |
+| `status` | enum | `TODO` / `IN_PROGRESS` / `REVIEW` / `DONE` |
+| `project_id` | int | Parent project ID |
+| `assignee_id` | int? | Assigned user ID (optional) |
+| `creator_id` | int | Creator user ID |
+| `priority` | int | 1-5 priority level |
+| `created_at` | datetime | Creation timestamp |
+| `updated_at` | datetime? | Last update timestamp |
+
+
+## API Endpoints
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/register` | User registration | No Auth |
+| POST | `/api/login` | Login → JWT token | No Auth |
+| GET | `/api/users/search` | Search users by login/name | Bearer Token |
+| POST | `/api/projects` | Create project | Bearer Token |
+| GET | `/api/projects` | List all projects | Bearer Token |
+| POST | `/api/projects/{id}/tasks` | Create task in project | Bearer Token |
+
+## JWT Implementation
+
+JWT (HS256) with 24-hour expiration.
+
+Based on: https://github.com/Yadroff/userver_jwt_checker.
+
+**JWT Token Structure:**
+```json
+{
+  "iss": "project-manager",
+  "user_id": "<user_id>",
+  "iat": "<issued_at>",
+  "exp": "<expires_at>"
+}
+```
+
+**Usage:**
+Authorization: Bearer <token>
+
+# Architecture
+## Storage Layer
+* Custom in-memory storage with std::unordered_map
+* Thread-safe via userver::engine::Mutex
+* Data is not persisted across service restarts
+
+## Authentication Layer
+* JwtChecker implements AuthCheckerBase (userver's auth framework)
+* JwtAuthComponent manages secret key from config
+* JwtAuthCheckerFactory registers jwt-auth type
+
+## Project Structure
+```
+myservice/
+├── src/
+│   ├── models/          # User, Project, Task
+│   ├── storage/         # In-memory storage
+│   ├── auth/            # JWT implementation
+│   ├── handlers/        # HTTP handlers
+│   └── main.cpp
+├── configs/             # YAML configs
+├── screenshots/         # Postman test results
+├── Dockerfile
+├── docker-compose.yaml
+├── openapi.yaml
+└── README.md
+```
+
+# Docker run
+```
+# Build image
+docker build -t myservice .
+
+# Run container
+docker run -d -p 8080:8080 --name myservice myservice
+
+# Or using docker compose (docker-compose)
+docker compose up -d
+(docker-compose up -d)
+```
+Service available at: http://localhost:8080
+
+## Examples
+### Register
+```
+curl -X POST http://localhost:8080/api/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "login": "user",
+    "password": "123456",
+    "first_name": "Ivan",
+    "last_name": "Ivanov",
+    "email": "ivan@example.com"
+  }'
+```
+### Login 
+```
+curl -X POST http://localhost:8080/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "login": "user",
+    "password": "123456"
+  }'
+```
+### Search Users (Authenticated)
+```
+TOKEN="<your-token>"
+
+# login search
+curl -X GET "http://localhost:8080/api/users/search?login=ivan" \
+  -H "Authorization: Bearer $TOKEN"
+
+# first_name and last_name masks search
+curl -X GET "http://localhost:8080/api/users/search?first_name=Ivan&last_name=Ivanov" \
+  -H "Authorization: Bearer $TOKEN"
+```
+### Create Project (Authenticated)
+```
+curl -X POST http://localhost:8080/api/projects \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "First Project",
+    "description": "This is a test project",
+    "key": "PRJ1"
+  }'
+```
+### Get Projects (Authenticated)
+```
+curl -X GET http://localhost:8080/api/projects \
+  -H "Authorization: Bearer $TOKEN"
+```
+### Create Task (Authenticated)
+The project with the using project id must exist.
+(/api/projects/{id}/tasks)
+
+```
+curl -X POST http://localhost:8080/api/projects/1/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "title": "Implement REST API",
+    "description": "Create all endpoints",
+    "priority": 5
+  }'
+```
+
+# Test results (Postman)
+
+# Success Cases
 ## User register
 ![Postman register](./screenshots/Screenshot_1.png)
 
@@ -36,18 +194,6 @@ Based on: https://github.com/Yadroff/userver_jwt_checker
 
 ## jwt.io jwt check
 ![Jwt check](./screenshots/jwtio_decoder.png)
-
-## User login wrong password
-![Postman login](./screenshots/Screenshot_3.png)
-
-## User login wrong login
-![Postman login](./screenshots/Screenshot_4.png)
-
-## User login missing password 
-![Postman login](./screenshots/Screenshot_5.png)
-
-## User register user already exists
-![Postman register](./screenshots/Screenshot_6.png)
 
 ## Get user by login
 ![User handlers check](./screenshots/Screenshot_7.png)
@@ -64,8 +210,29 @@ Based on: https://github.com/Yadroff/userver_jwt_checker
 ## Create (post) a task
 ![Task handlers check](./screenshots/Screenshot_11.png)
 
+# Error Cases
+## User login wrong password
+![Postman login](./screenshots/Screenshot_3.png)
+
+## User login wrong login
+![Postman login](./screenshots/Screenshot_4.png)
+
+## User login missing password 
+![Postman login](./screenshots/Screenshot_5.png)
+
+## User register user already exists
+![Postman register](./screenshots/Screenshot_6.png)
+
 ## Create (post) a task in non-existent project
 ![Task handlers check](./screenshots/Screenshot_12.png)
+
+
+# OpenAPI Documentation
+OpenAPI 3.0 specification: [`openapi.yaml`](openapi.yaml).
+Created with VS Code OpenAPI extension and validated in Swagger Editor. 
+
+To view interactive documentation: [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/xuxusw/myservice/main/openapi.yaml).
+
 
 ## Makefile
 

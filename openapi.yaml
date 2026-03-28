@@ -1,0 +1,257 @@
+openapi: 3.0.0
+info:
+  title: Project Management API
+  description: REST API for managing projects and tasks 
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+    description: Local server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        key:
+          type: string
+        owner_id:
+          type: integer
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+        project_id:
+          type: integer
+        creator_id:
+          type: integer
+        priority:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password, first_name, last_name, email]
+              properties:
+                login: {type: string}
+                password: {type: string}
+                first_name: {type: string}
+                last_name: {type: string}
+                email: {type: string}
+      responses:
+        201:
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      summary: Login and get JWT token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: {type: string}
+                password: {type: string}
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: {type: string}
+        400:
+          description: Missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/search:
+    get:
+      summary: Search users by login or name
+      tags: [Users]
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: login
+          in: query
+          schema: {type: string}
+        - name: first_name
+          in: query
+          schema: {type: string}
+        - name: last_name
+          in: query
+          schema: {type: string}
+      responses:
+        200:
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        400:
+          description: No search parameters
+        401:
+          description: Unauthorized
+
+  /projects:
+    post:
+      summary: Create a new project
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                description: {type: string}
+                key: {type: string}
+      responses:
+        201:
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        400:
+          description: Missing name
+        401:
+          description: Unauthorized
+
+    get:
+      summary: Get all projects
+      tags: [Projects]
+      security: [{bearerAuth: []}]
+      responses:
+        200:
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        401:
+          description: Unauthorized
+
+  /projects/{projectId}/tasks:
+    post:
+      summary: Create a task in a project
+      tags: [Tasks]
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: {type: string}
+                description: {type: string}
+                status: {type: string, enum: [TODO, IN_PROGRESS, REVIEW, DONE]}
+                priority: {type: integer, minimum: 1, maximum: 5}
+      responses:
+        201:
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        400:
+          description: Missing title
+        401:
+          description: Unauthorized
+        404:
+          description: Project not found
