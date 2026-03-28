@@ -8,3 +8,13 @@ services:
     volumes:
       - ./configs:/app/configs:ro
     restart: unless-stopped
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8081:8080"
+    environment:
+      - SWAGGER_JSON=/openapi.yaml
+    volumes:
+      - ./openapi.yaml:/openapi.yaml:ro
+    restart: unless-stopped
