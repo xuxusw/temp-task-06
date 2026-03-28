@@ -29,6 +29,7 @@ public:
                                                        const std::string& last_name_mask);
     
     std::optional<models::Project> CreateProject(const models::Project& project);
+    std::optional<models::Project> GetProjectById(int id);
     std::vector<models::Project> GetAllProjects();
     
     std::optional<models::Task> CreateTask(const models::Task& task);

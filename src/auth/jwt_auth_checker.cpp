@@ -11,7 +11,7 @@ namespace auth {
 namespace {
 static constexpr std::string_view kBearerPrefix = "Bearer ";
 static constexpr std::string_view kIssuer = "project-manager";
-static const std::string kSecret = "secret-key-change-me-later";
+static const std::string kSecret = "my-secret-key-change-me-later";
 }  // namespace
  
 JwtChecker::JwtChecker(const std::string& secret) : secret_(secret) {}
@@ -84,7 +84,7 @@ properties:
     secret:
         type: string
         description: secret key for JWT validation
-        default: "secret-key-change-me-later"
+        default: "my-secret-key-change-me-later"
 )");
 }
  

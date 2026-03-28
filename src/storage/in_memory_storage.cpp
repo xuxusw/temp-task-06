@@ -44,7 +44,7 @@ std::optional<models::User> InMemoryStorage::GetUserByLogin(const std::string& l
     return std::nullopt;
 }
 
-// for later
+// done
 std::vector<models::User> InMemoryStorage::SearchUsersByLogin(const std::string& login_mask) {
     std::lock_guard<userver::engine::Mutex> lock(mutex_);
     
@@ -57,6 +57,7 @@ std::vector<models::User> InMemoryStorage::SearchUsersByLogin(const std::string&
     return result;
 }
 
+// done
 std::vector<models::User> InMemoryStorage::SearchUsersByFirstNameLastName(
     const std::string& first_name_mask, const std::string& last_name_mask) {
     std::lock_guard<userver::engine::Mutex> lock(mutex_);
@@ -71,6 +72,7 @@ std::vector<models::User> InMemoryStorage::SearchUsersByFirstNameLastName(
     return result;
 }
 
+// done
 std::optional<models::Project> InMemoryStorage::CreateProject(const models::Project& project) {
     std::lock_guard<userver::engine::Mutex> lock(mutex_);
     
@@ -81,6 +83,18 @@ std::optional<models::Project> InMemoryStorage::CreateProject(const models::Proj
     return new_project;
 }
 
+// done - for task creation and maybe something more later
+std::optional<models::Project> InMemoryStorage::GetProjectById(int id) {
+    std::lock_guard<userver::engine::Mutex> lock(mutex_);
+    
+    auto it = projects_.find(id);
+    if (it != projects_.end()) {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
+// for later - done
 std::vector<models::Project> InMemoryStorage::GetAllProjects() {
     std::lock_guard<userver::engine::Mutex> lock(mutex_);
     
@@ -91,6 +105,7 @@ std::vector<models::Project> InMemoryStorage::GetAllProjects() {
     return result;
 }
 
+// done
 std::optional<models::Task> InMemoryStorage::CreateTask(const models::Task& task) {
     std::lock_guard<userver::engine::Mutex> lock(mutex_);
     

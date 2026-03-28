@@ -93,9 +93,9 @@ components_manager:
             task-processor: main-task-processor
 
         jwt-auth-checker:
-            secret: "secret-key-change-me-later"
+            secret: "my-secret-key-change-me-later"
 
-        in-memory-storage:
+        in-memory-storage: {}
         
         handler-register:
             path: /api/register
@@ -106,3 +106,31 @@ components_manager:
             path: /api/login
             method: POST
             task_processor: main-task-processor
+
+        handler-user-search:
+            path: /api/users/search
+            method: GET
+            task_processor: main-task-processor
+            auth: 
+                type: jwt-auth
+
+        handler-create-project:
+            path: /api/projects
+            method: POST
+            task_processor: main-task-processor
+            auth: 
+                type: jwt-auth
+        
+        handler-get-projects:
+            path: /api/projects
+            method: GET
+            task_processor: main-task-processor
+            auth: 
+                type: jwt-auth
+
+        handler-create-task:
+            path: /api/projects/{projectId}/tasks
+            method: POST
+            task_processor: main-task-processor
+            auth: 
+                type: jwt-auth

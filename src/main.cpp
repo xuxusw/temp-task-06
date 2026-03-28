@@ -22,6 +22,9 @@
 #include "auth/jwt_auth_factory.hpp"
 #include "auth/jwt_auth_checker.hpp"
 #include "handlers/auth_handlers.hpp"
+#include "handlers/user_handlers.hpp"
+#include "handlers/project_handlers.hpp"
+#include "handlers/task_handlers.hpp"
 #include "storage/in_memory_storage.hpp"
 
 int main(int argc, char* argv[]) {
@@ -47,6 +50,10 @@ int main(int argc, char* argv[]) {
             .Append<myservice::auth::JwtAuthComponent>()
             .Append<myservice::handlers::RegisterHandler>()
             .Append<myservice::handlers::LoginHandler>()
+            .Append<myservice::handlers::UserSearchHandler>()
+            .Append<myservice::handlers::CreateProjectHandler>()
+            .Append<myservice::handlers::GetProjectsHandler>()
+            .Append<myservice::handlers::CreateTaskHandler>()
             .Append<myservice::storage::InMemoryStorage>()
         ;
 

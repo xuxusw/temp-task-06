@@ -48,6 +48,9 @@ add_library(
     src/auth/jwt.cpp
     src/storage/in_memory_storage.cpp
     src/handlers/auth_handlers.cpp
+    src/handlers/user_handlers.cpp
+    src/handlers/project_handlers.cpp
+    src/handlers/task_handlers.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs
