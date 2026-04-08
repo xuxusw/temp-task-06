@@ -1,15 +1,122 @@
 # myservice
 
-REST API сервис для управления проектами и задачами (вариант 8 "Управление проектами").
+Проектирование и оптимизация реляционной базы данных (вариант 8 "Управление проектами").
+
+This work is extending the REST API service (in main branch) with a PostgreSQL database.
 
 C++ service for project and task management that uses [userver framework](https://github.com/userver-framework/userver).
 
 ## Technology Stack:
 * C++20 + userver framework
 * JWT Authentication (jwt-cpp v0.7.2)
+* PostgreSQL 14
 * OpenAPI 3.0
-* Docker 
+* Docker + Docker Compose
 
+## Features Implemented
+### 1. Database Schema Design (`schema.sql`)
+- **Tables:** `users`, `projects`, `tasks`
+- **Primary Keys:** Auto-increment `SERIAL` for all tables
+- **Foreign Keys:** Proper relationships with cascading rules
+- **Constraints:** `NOT NULL`, `UNIQUE`, `CHECK` (status validation, priority range 1-5)
+- **Soft Delete:** `is_deleted` flag for users (history preservation)
+- **Cascade Rules:**
+  - `tasks.project_id -> projects.id ON DELETE CASCADE` (tasks deleted when project is deleted)
+  - `tasks.assignee_id -> users.id ON DELETE SET NULL` (tasks remain, assignee becomes NULL)
+  - `tasks.creator_id -> users.id ON DELETE SET NULL` (tasks remain, creator becomes NULL)
+
+### 2. Indexes for Query Optimization
+| Index | Table | Columns | Purpose |
+|-------|-------|---------|---------|
+| `idx_users_login` | users | login (WHERE is_deleted = FALSE) | Fast login lookup |
+| `idx_users_first_name_last_name` | users | first_name, last_name | Name search |
+| `idx_projects_name` | projects | name | Project search by name |
+| `idx_projects_owner_id` | projects | owner_id | JOIN with users |
+| `idx_tasks_project_id` | tasks | project_id | Filter tasks by project |
+| `idx_tasks_assignee_id` | tasks | assignee_id | Filter tasks by assignee |
+| `idx_tasks_creator_id` | tasks | creator_id | Filter tasks by creator |
+| `idx_tasks_status` | tasks | status | Filter by task status |
+| `idx_tasks_project_priority` | tasks | project_id, priority DESC | Sorting by priority within project |
+| `idx_users_name_trgm` | users | first_name, last_name (GIN) | Pattern matching with `LIKE '%...%'` |
+
+### 3. Test Data 
+`data.sql`:
+- **Users:** 10 records 
+- **Projects:** 10 records across different owners
+- **Tasks:** 10 records with various statuses and priorities
+
+`bigger_data.sql`:
+- **Users:** 10000 records 
+- **Projects:** 1000 records across different owners
+- **Tasks:** 5000 records with various statuses and priorities
+
+### 4. SQL Queries (`queries.sql`)
+All API operations implemented as SQL
+| Operation | SQL Query |
+|-----------|-----------|
+| Create user | `INSERT INTO users ... RETURNING id` |
+| Find user by login | `SELECT ... WHERE login = $1 AND is_deleted = FALSE` |
+| Search by name mask | `SELECT ... WHERE first_name ILIKE '%...%'` |
+| Create project | `INSERT INTO projects ... RETURNING id` |
+| Search project by name | `SELECT ... WHERE name ILIKE '%...%'` |
+| Get all projects | `SELECT ... ORDER BY created_at DESC` |
+| Create task | `INSERT INTO tasks ... RETURNING id` |
+| Get tasks by project | `SELECT ... LEFT JOIN users ... WHERE project_id = $1` |
+| Get task by ID | `SELECT ... JOIN projects, users ... WHERE task.id = $1` |
+| Update task status | `UPDATE tasks SET status = $1, updated_at = NOW()` |
+| Project statistics | `COUNT(CASE WHEN status = 'TODO' ...) GROUP BY project` |
+| Soft delete user | `UPDATE users SET is_deleted = TRUE WHERE id = $1` |
+
+### 5. Optimization Analysis (`optimization.md`)
+EXPLAIN ANALYZE results before and after index creation
+| Query | W/o index | With index | Query acceleration |
+|-------|------|-------------|-------------|
+| search by login | 0.101 ms (seq scan) | 0.033 ms (index scan) | ~3x |
+| search by mask | 0.426 ms (seq scan) | 0.070 ms (bitmap heap scan) | ~6x |
+| JOIN tasks->users | 2.501 ms (seq scan) | 0.075 ms (index scan) | ~33x |
+
+### 6. API to PostgreSQL Integration
+The C++ API (`postgres_storage.cpp`) now uses `userver::storages::postgres::Cluster` to execute SQL queries instead of in-memory storage. All handlers (`RegisterHandler`, `LoginHandler`, `UserSearchHandler`, etc.) work transparently with the database.
+
+## How to Run
+```
+git clone <this-repo>
+```
+```
+cd <repo-name>
+```
+```
+docker compose up -d
+```
+Check running containers:
+```
+docker compose ps
+```
+Exec SQL scripts:
+```
+docker compose exec -T postgres psql -U myservice -d myservice_db < postgresql/schemas/schema.sql
+```
+```
+docker compose exec -T postgres psql -U myservice -d myservice_db < postgresql/schemas/data.sql
+```
+(you can also exec `bigger_data.sql`. but be prepaired that it'll make longer tables)  
+Move into myservice_db for running SQL commands:
+```
+docker compose exec postgres psql -U myservice -d myservice_db
+```
+Check created tables:
+```
+SELECT * FROM users;
+```
+```
+SELECT * FROM projects;
+```
+```
+SELECT * FROM tasks;
+```
+Run any SQL commands you want.
+
+## Basic info about the project:
 ## Data models  
 ### User
 | Field | Data Type | Description |
@@ -96,20 +203,26 @@ Authorization: Bearer <token>
 ## Project Structure
 ```
 myservice/
-├── src/
-│   ├── models/          # User, Project, Task
-│   ├── storage/         # In-memory storage
-│   ├── auth/            # JWT implementation
-│   ├── handlers/        # HTTP handlers
-│   └── main.cpp
-├── configs/             # YAML configs
-├── screenshots/         # Postman test results
+├── postgresql/
+│   └── schemas/
+│       ├── schema.sql          # Database schema (tables, indexes, constraints)
+│       ├── data.sql            # Test data (10+ records)
+│       ├── bigger_data.sql     # Bigger test data (5000+ records)
+├── queries.sql                 # SQL queries for all API operations
+├── optimization.md             # EXPLAIN ANALYZE results and optimization analysis
+├── optimization_bigger_data.md # EXPLAIN ANALYZE results for bigger data
+├── src/                        # API source code
+│   ├── models/                 # User, Project, Task models
+│   ├── storage/                # PostgresStorage (replaces InMemoryStorage)
+│   ├── auth/                   # JWT authentication
+│   └── handlers/               # HTTP handlers
+├── configs/                    # YAML configuration files
 ├── Dockerfile
 ├── docker-compose.yaml
 ├── openapi.yaml
 └── README.md
 ```
-**Note:** `auth_middleware.hpp`/`auth_middleware.cpp` in `/handlers` are not currently used. Authentication is implemented with userver's built-in AuthCheckerBase mechanism. 
+**Note:** `auth_middleware.hpp`/`auth_middleware.cpp` in `/handlers` are not currently used. Authentication is implemented with userver's built-in AuthCheckerBase mechanism.  
 
 # Docker run
 ```
