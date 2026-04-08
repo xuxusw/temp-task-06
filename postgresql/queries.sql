@@ -1,8 +1,8 @@
 \c myservice_db;
 
 -- создание нового пользователя
-INSERT INTO users (login, password_hash, first_name, last_name, email)
-VALUES ('newuser', 'pass123', 'Имя', 'Фамилия', 'email@example.com')
+INSERT INTO users (login, password_hash, first_name, last_name, email, created_at)
+VALUES ('newuser', 'pass123', 'Имя', 'Фамилия', 'email@example.com', NOW())
 RETURNING id, login, first_name, last_name, email;
 
 
@@ -52,7 +52,7 @@ WHERE t.project_id = 1
 ORDER BY t.priority DESC, t.created_at;
 
 
--- получение задачи по коду (ID)
+-- получение задачи по коду проекта (ID)
 SELECT t.id, t.title, t.description, t.status, t.priority,
        t.created_at, t.updated_at,
        p.name AS project_name,
@@ -67,7 +67,7 @@ WHERE t.id = 1;
 
 -- обновление статуса задачи
 UPDATE tasks
-SET status = 'IN_PROGRESS', updated_at = CURRENT_TIMESTAMP
+SET status = 'IN_PROGRESS', updated_at = NOW()
 WHERE id = 1
 RETURNING id, status, updated_at;
 
@@ -104,5 +104,5 @@ SELECT id, login, first_name, last_name, email, is_deleted FROM users;
 SELECT id, login, first_name, last_name, email
 FROM users WHERE is_deleted = FALSE;
 
--- get the user back
+-- get the deleted user back
 UPDATE users SET is_deleted = FALSE WHERE id = 1;
