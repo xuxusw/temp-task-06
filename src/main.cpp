@@ -25,11 +25,11 @@
 #include "handlers/user_handlers.hpp"
 #include "handlers/project_handlers.hpp"
 #include "handlers/task_handlers.hpp"
-#include "storage/in_memory_storage.hpp"
+// #include "storage/in_memory_storage.hpp"
+#include "storage/postgres_storage.hpp"
 
 int main(int argc, char* argv[]) {
-    // auto storage = std::make_shared<myservice::storage::InMemoryStorage>();
-    // auto storage = std::make_shared<myservice::storage::InMemoryStorage>();
+
     userver::server::handlers::auth::RegisterAuthCheckerFactory<myservice::auth::JwtAuthCheckerFactory>();
 
     auto component_list =
@@ -54,7 +54,8 @@ int main(int argc, char* argv[]) {
             .Append<myservice::handlers::CreateProjectHandler>()
             .Append<myservice::handlers::GetProjectsHandler>()
             .Append<myservice::handlers::CreateTaskHandler>()
-            .Append<myservice::storage::InMemoryStorage>()
+            // .Append<myservice::storage::InMemoryStorage>()
+            .Append<myservice::storage::PostgresStorage>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);

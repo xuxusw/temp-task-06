@@ -4,7 +4,8 @@
 #include <userver/components/component_context.hpp>
 #include <userver/server/handlers/http_handler_base.hpp>
 
-#include "storage/in_memory_storage.hpp"
+// #include "storage/in_memory_storage.hpp"
+#include "storage/postgres_storage.hpp"
 
 namespace myservice {
 namespace handlers {
@@ -21,7 +22,8 @@ public:
         userver::server::request::RequestContext& context) const override;
     
 private:
-    storage::InMemoryStorage& storage_;
+    // storage::InMemoryStorage& storage_;
+    storage::PostgresStorage& storage_; 
 };
 
 } // namespace handlers

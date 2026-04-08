@@ -12,7 +12,8 @@ CreateTaskHandler::CreateTaskHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {}
 
 std::string CreateTaskHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -41,7 +42,8 @@ std::string CreateTaskHandler::HandleRequestThrow(
     task.project_id = project_id;
     task.creator_id = user_id;
     task.priority = json["priority"].As<int>(3);
-    task.created_at = std::chrono::system_clock::now();
+    // task.created_at = std::chrono::system_clock::now();
+    task.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateTask(task);
     

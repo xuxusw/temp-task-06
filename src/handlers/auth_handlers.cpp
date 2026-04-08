@@ -15,8 +15,8 @@ RegisterHandler::RegisterHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-    // std::shared_ptr<storage::InMemoryStorage> storage;
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {}  
+      // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {}  
     
 std::string RegisterHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -46,7 +46,8 @@ std::string RegisterHandler::HandleRequestThrow(
     user.first_name = json["first_name"].As<std::string>();
     user.last_name = json["last_name"].As<std::string>();
     user.email = json["email"].As<std::string>();
-    user.created_at = std::chrono::system_clock::now();
+    // user.created_at = std::chrono::system_clock::now();
+    user.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateUser(user); 
     
@@ -68,7 +69,8 @@ LoginHandler::LoginHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {} 
+      // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {} 
 
 std::string LoginHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,

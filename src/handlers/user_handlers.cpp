@@ -11,7 +11,8 @@ UserSearchHandler::UserSearchHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      //storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {}
 
 std::string UserSearchHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,

@@ -46,7 +46,8 @@ add_library(
     src/auth/jwt_auth_checker.cpp
     src/auth/jwt_auth_factory.cpp
     src/auth/jwt.cpp
-    src/storage/in_memory_storage.cpp
+    # src/storage/in_memory_storage.cpp
+    src/storage/postgres_storage.cpp
     src/handlers/auth_handlers.cpp
     src/handlers/user_handlers.cpp
     src/handlers/project_handlers.cpp

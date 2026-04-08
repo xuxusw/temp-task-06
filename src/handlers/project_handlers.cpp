@@ -10,7 +10,8 @@ CreateProjectHandler::CreateProjectHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {}
 
 std::string CreateProjectHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -30,7 +31,8 @@ std::string CreateProjectHandler::HandleRequestThrow(
     project.description = json["description"].As<std::string>("");
     project.key = json["key"].As<std::string>("");
     project.owner_id = user_id;
-    project.created_at = std::chrono::system_clock::now();
+    // project.created_at = std::chrono::system_clock::now();
+    project.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateProject(project);
     
@@ -49,7 +51,8 @@ GetProjectsHandler::GetProjectsHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()) {}
 
 std::string GetProjectsHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
