@@ -76,7 +76,7 @@ components_manager:
             sync-start: true
             connlimit_mode: manual
         
-        postgres-storage: {}
+        # postgres-storage: {}
 
         handler-hello-mongo:             # Our mongo handler.
             path: /hello-mongo            # Registering handler by URL '/hello-mongo'.
@@ -97,7 +97,7 @@ components_manager:
         jwt-auth-checker:
             secret: "my-secret-key-change-me-later"
 
-        # in-memory-storage: {}
+        in-memory-storage: {}
         
         handler-register:
             path: /api/register
