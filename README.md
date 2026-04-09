@@ -23,7 +23,7 @@ C++ service for project and task management that uses [userver framework](https:
 - **Cascade Rules:**
   - `tasks.project_id -> projects.id ON DELETE CASCADE` (tasks deleted when project is deleted)
   - `tasks.assignee_id -> users.id ON DELETE SET NULL` (tasks remain, assignee becomes NULL)
-  - `tasks.creator_id -> users.id ON DELETE SET NULL` (tasks remain, creator becomes NULL)
+  - `tasks.creator_id -> users.id ON DELETE RESTRICT` (tasks remain, creator remains in history. NOT NULL is not quite good cause it wont keep the info about who created the task. so RESTRICT)
 
 ### 2. Indexes for Query Optimization
 | Index | Table | Columns | Purpose |
