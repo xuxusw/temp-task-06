@@ -44,5 +44,17 @@ services:
       retries: 5
     restart: unless-stopped
 
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/validation.js:/docker-entrypoint-initdb.d/01_validation.js:ro
+      - ./mongodb/data.js:/docker-entrypoint-initdb.d/02_data.js:ro
+    restart: unless-stopped
+    command: mongod --bind_ip_all
+
 volumes:
   postgres_data:
+  mongodb_data:
