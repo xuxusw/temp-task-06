@@ -13,6 +13,8 @@ db.comments.insertOne({
 
 
 db.comments.find({ task_id: 1 }).pretty();
+db.notifications.find({ user_id: 1 }).pretty();
+db.task_history.find({ task_id: 1 }).pretty();
 
 db.comments.find({ replies: { $ne: [] } }).pretty();
 
@@ -39,6 +41,24 @@ db.comments.updateOne(
 );
 
 
+db.notifications.insertOne({
+    user_id: 1,
+    type: 'comment',
+    message: 'Кто-то ответил на ваш комментарий',
+    created_at: new Date(),
+    is_read: false,
+    metadata: { task_id: 1, comment_id: newComment._id }
+});
+print('Added notification');
+
+
+db.notifications.updateOne(
+    { user_id: 1, is_read: false },
+    { $set: { is_read: true, read_at: new Date() } }
+);
+print('Marked notifications as read');
+
+
 db.comments.deleteOne({ _id: ObjectId("...") });
 
 db.comments.deleteMany({ task_id: 999 });
@@ -56,6 +76,11 @@ db.comments.aggregate([
     { $sort: { replies_count: -1 } }
 ]).forEach(printjson);
 
+
+db.notifications.aggregate([
+    { $group: { _id: '$user_id', count: { $sum: 1 } } },
+    { $sort: { count: -1 } }
+]).forEach(printjson);
 
 // validation test - невалидный документ (должна быть ошибка)
 try {

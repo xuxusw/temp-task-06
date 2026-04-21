@@ -1,6 +1,8 @@
 db = db.getSiblingDB('myservice_mongo');
 
 db.comments.drop();
+db.notifications.drop();
+db.task_history.drop();
 
 db.comments.insertMany([
     {
@@ -112,3 +114,25 @@ db.comments.insertMany([
 ]);
 
 print('Inserted ' + db.comments.count() + ' comments');
+
+
+const notifications = [
+    { user_id: 1, type: 'comment', message: 'Новый комментарий к задаче #1', created_at: new Date(), is_read: false },
+    { user_id: 1, type: 'task_assigned', message: 'Вам назначена задача #5', created_at: new Date(), is_read: true, read_at: new Date() },
+    { user_id: 2, type: 'task_completed', message: 'Задача #3 завершена', created_at: new Date(), is_read: false },
+    { user_id: 3, type: 'project_created', message: 'Создан новый проект "Frontend Redesign"', created_at: new Date(), is_read: false },
+    { user_id: 1, type: 'comment', message: 'Ответ на ваш комментарий', created_at: new Date(), is_read: false, metadata: { task_id: 1 } }
+];
+
+db.notifications.insertMany(notifications);
+print(`Inserted ${db.notifications.count()} notifications`);
+
+
+const taskHistory = [
+    { task_id: 1, changed_by: 1, field: 'status', old_value: 'TODO', new_value: 'IN_PROGRESS', changed_at: new Date() },
+    { task_id: 1, changed_by: 2, field: 'assignee_id', old_value: 'null', new_value: '5', changed_at: new Date() },
+    { task_id: 2, changed_by: 1, field: 'priority', old_value: '3', new_value: '5', changed_at: new Date(), comment: 'Критическая задача' }
+];
+
+db.task_history.insertMany(taskHistory);
+print(`Inserted ${db.task_history.count()} task_history records`);
