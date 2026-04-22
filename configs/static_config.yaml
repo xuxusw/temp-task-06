@@ -75,8 +75,6 @@ components_manager:
             dns_resolver: async
             sync-start: true
             connlimit_mode: manual
-        
-        # postgres-storage: {}
 
         handler-hello-mongo:             # Our mongo handler.
             path: /hello-mongo            # Registering handler by URL '/hello-mongo'.
@@ -84,7 +82,32 @@ components_manager:
             task_processor: main-task-processor  # Run it on CPU bound task processor
 
         mongo-db-1:
-            dbconnection: $mongo-connection
+            # dbconnection: $mongo-connection
+            dbconnection: mongodb://mongodb:27017/myservice_mongo
+            initial_size: 2
+            max_size: 16
+            queue_timeout: 1s
+
+        handler-add-comment:
+            path: /api/tasks/{taskId}/comments
+            method: POST
+            task_processor: main-task-processor
+            auth:
+                type: jwt-auth
+
+        handler-get-comments:
+            path: /api/tasks/{taskId}/comments
+            method: GET
+            task_processor: main-task-processor
+            auth:
+                type: jwt-auth
+
+        handler-add-reply:
+            path: /api/comments/{commentId}/replies
+            method: POST
+            task_processor: main-task-processor
+            auth:
+                type: jwt-auth
 
         grpc-server:
             # The single listening port for incoming RPCs
@@ -97,7 +120,10 @@ components_manager:
         jwt-auth-checker:
             secret: "my-secret-key-change-me-later"
 
-        in-memory-storage: {}
+        # in-memory-storage: {}
+
+        postgres-storage: {}
+        mongo-storage: {}
         
         handler-register:
             path: /api/register

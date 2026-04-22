@@ -52,6 +52,8 @@ add_library(
     src/handlers/user_handlers.cpp
     src/handlers/project_handlers.cpp
     src/handlers/task_handlers.cpp
+    src/storage/mongodb_storage.cpp
+    src/handlers/comment_handlers.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs

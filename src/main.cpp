@@ -25,8 +25,10 @@
 #include "handlers/user_handlers.hpp"
 #include "handlers/project_handlers.hpp"
 #include "handlers/task_handlers.hpp"
+#include "handlers/comment_handlers.hpp"
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
+#include "storage/mongodb_storage.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -54,8 +56,12 @@ int main(int argc, char* argv[]) {
             .Append<myservice::handlers::CreateProjectHandler>()
             .Append<myservice::handlers::GetProjectsHandler>()
             .Append<myservice::handlers::CreateTaskHandler>()
+            .Append<myservice::handlers::AddCommentHandler>()
+            .Append<myservice::handlers::GetCommentsHandler>()
+            .Append<myservice::handlers::AddReplyHandler>()
             // .Append<myservice::storage::InMemoryStorage>()
             .Append<myservice::storage::PostgresStorage>()
+            .Append<myservice::storage::MongoStorage>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);
