@@ -1,8 +1,8 @@
 # myservice
 
-Проектирование и оптимизация реляционной базы данных (вариант 8 "Управление проектами").
+Проектирование и работа с MongoDB (вариант 8 "Управление проектами").
 
-This work is extending the REST API service (in main branch) with a PostgreSQL database.
+This work adds MongoDB collections to the REST API service (in main branch) with PostgreSQL database (and partial Mongo database).
 
 C++ service for project and task management that uses [userver framework](https://github.com/userver-framework/userver).
 
@@ -10,10 +10,53 @@ C++ service for project and task management that uses [userver framework](https:
 * C++20 + userver framework
 * JWT Authentication (jwt-cpp v0.7.2)
 * PostgreSQL 14
+* MongoDB 7
 * OpenAPI 3.0
 * Docker + Docker Compose
 
-## Features Implemented
+## MongoDB
+
+Описание содержится в `schema_design.md`.  
+Новые файлы:
+```
+myservice/
+├── mongodb/
+│   ├── data.js
+│   ├── docker_commands.md
+│   ├── queries.js
+│   ├── schema_design.md
+│   ├── validation.js
+```
+
+Для основных сущностей (`users`, `projects`, `tasks`) в MongoDB созданы коллекции с тестовыми данными (`data.js`), валидацией (`validation.js`) и CRUD-примерами (`queries.js`). 
+
+Добавлены новые сущности `comments`, `task_history` и `notifications` для демонстрации работы с неструктурированными данными. Для них тоже созданы коллекции с тестовыми данными (`data.js`), валидацией (`validation.js`) и CRUD-примерами (`queries.js`). Они прописаны для демонстрации сценариев, где документная модель более удобна:  
+comments - иерархическая структура (вложенные replies);  
+task_history - лог изменений (много записей, не нагружают основную БД);  
+notifications - разные типы уведомлений с разными полями.  
+
+`replies` вложены в документ комментария `comments` (embedded).
+
+## Docker run
+Start the container:
+```
+docker compose up -d mongodb
+```
+Run the command to see collections made: 
+```
+docker compose exec mongodb mongosh myservice_mongo --eval "show collections"
+```
+Enter the container to test queries:
+```
+docker compose exec mongodb mongosh myservice_mongo
+```
+Now you can run commands from `queries.js`.  
+After you are done, stop and delete the container:
+```
+docker compose down -v
+```
+
+## PostgeSQL
 ### 1. Database Schema Design (`schema.sql`)
 - **Tables:** `users`, `projects`, `tasks`
 - **Primary Keys:** `id SERIAL PRIMARY KEY` for all tables
