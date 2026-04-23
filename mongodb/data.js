@@ -1,8 +1,60 @@
 db = db.getSiblingDB('myservice_mongo');
 
+db.users.drop();
+db.projects.drop();
+db.tasks.drop();
 db.comments.drop();
 db.notifications.drop();
 db.task_history.drop();
+
+
+const users = [
+    { login: 'ivan123', password_hash: 'hash_ivan', first_name: 'Иван', last_name: 'Петров', email: 'ivan@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'john', password_hash: 'hash_john', first_name: 'John', last_name: 'Doe', email: 'john@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'jane', password_hash: 'hash_jane', first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'alex', password_hash: 'hash_alex', first_name: 'Alex', last_name: 'Johnson', email: 'alex@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'maria', password_hash: 'hash_maria', first_name: 'Maria', last_name: 'Garcia', email: 'maria@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'dmitry', password_hash: 'hash_dmitry', first_name: 'Дмитрий', last_name: 'Соколов', email: 'dmitry@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'elena', password_hash: 'hash_elena', first_name: 'Елена', last_name: 'Кузнецова', email: 'elena@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'pavel', password_hash: 'hash_pavel', first_name: 'Павел', last_name: 'Морозов', email: 'pavel@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'olga', password_hash: 'hash_olga', first_name: 'Ольга', last_name: 'Волкова', email: 'olga@example.com', created_at: new Date(), is_deleted: false },
+    { login: 'sergey', password_hash: 'hash_sergey', first_name: 'Сергей', last_name: 'Михайлов', email: 'sergey@example.com', created_at: new Date(), is_deleted: false }
+];
+db.users.insertMany(users);
+print(`Inserted ${db.users.count()} users`);
+
+
+const projects = [
+    { name: 'Проект Альфа', description: 'Описание проекта Альфа', key: 'ALPHA', owner_id: 1, created_at: new Date() },
+    { name: 'Проект Бета', description: 'Описание проекта Бета', key: 'BETA', owner_id: 1, created_at: new Date() },
+    { name: 'Проект Гамма', description: 'Описание проекта Гамма', key: 'GAMMA', owner_id: 2, created_at: new Date() },
+    { name: 'Frontend Redesign', description: 'Переделка фронтенда', key: 'FRONT', owner_id: 3, created_at: new Date() },
+    { name: 'Backend API', description: 'Разработка API', key: 'BACK', owner_id: 1, created_at: new Date() },
+    { name: 'Mobile App', description: 'Мобильное приложение', key: 'MOBILE', owner_id: 4, created_at: new Date() },
+    { name: 'Database Migration', description: 'Миграция базы данных', key: 'DBMIG', owner_id: 2, created_at: new Date() },
+    { name: 'DevOps', description: 'Настройка CI/CD', key: 'DEVOPS', owner_id: 5, created_at: new Date() },
+    { name: 'Security Audit', description: 'Аудит безопасности', key: 'SEC', owner_id: 1, created_at: new Date() },
+    { name: 'Documentation', description: 'Написание документации', key: 'DOCS', owner_id: 3, created_at: new Date() }
+];
+db.projects.insertMany(projects);
+print(`Inserted ${db.projects.count()} projects`);
+
+
+const tasks = [
+    { title: 'Создать схему БД', description: 'Проектирование базы данных', status: 'DONE', project_id: 1, assignee_id: 1, creator_id: 1, priority: 5, created_at: new Date() },
+    { title: 'Написать API регистрации', description: 'Регистрация пользователей', status: 'DONE', project_id: 5, assignee_id: 2, creator_id: 1, priority: 5, created_at: new Date() },
+    { title: 'Написать API логина', description: 'Аутентификация', status: 'IN_PROGRESS', project_id: 5, assignee_id: 2, creator_id: 1, priority: 4, created_at: new Date() },
+    { title: 'Разработать фронтенд', description: 'Главная страница', status: 'TODO', project_id: 4, assignee_id: 3, creator_id: 3, priority: 3, created_at: new Date() },
+    { title: 'Настроить CI/CD', description: 'GitHub Actions', status: 'IN_PROGRESS', project_id: 8, assignee_id: 5, creator_id: 5, priority: 4, created_at: new Date() },
+    { title: 'Написать тесты', description: 'Модульное тестирование', status: 'TODO', project_id: 5, assignee_id: 2, creator_id: 1, priority: 3, created_at: new Date() },
+    { title: 'Документация API', description: 'OpenAPI спецификация', status: 'REVIEW', project_id: 10, assignee_id: 3, creator_id: 3, priority: 2, created_at: new Date() },
+    { title: 'Аудит безопасности', description: 'Проверка уязвимостей', status: 'TODO', project_id: 9, assignee_id: 1, creator_id: 1, priority: 5, created_at: new Date() },
+    { title: 'Оптимизация запросов', description: 'Добавить индексы', status: 'IN_PROGRESS', project_id: 7, assignee_id: 2, creator_id: 2, priority: 4, created_at: new Date() },
+    { title: 'Деплой в продакшн', description: 'Настройка сервера', status: 'TODO', project_id: 8, assignee_id: 5, creator_id: 5, priority: 5, created_at: new Date() }
+];
+db.tasks.insertMany(tasks);
+print(`Inserted ${db.tasks.count()} tasks`);
+
 
 db.comments.insertMany([
     {

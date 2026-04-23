@@ -2,6 +2,63 @@
 
 db = db.getSiblingDB('myservice_mongo');
 
+// users CRUD
+db.users.insertOne({
+    login: 'newuser',
+    password_hash: 'hash_new',
+    first_name: 'New',
+    last_name: 'User',
+    email: 'new@example.com',
+    created_at: new Date(),
+    is_deleted: false
+});
+
+db.users.findOne({ login: 'ivan123', is_deleted: false });
+db.users.find({ first_name: /Иван/i, is_deleted: false });
+db.users.find({ is_deleted: false });
+
+db.users.updateOne({ login: 'newuser' }, { $set: { first_name: 'Updated' } });
+
+db.users.deleteOne({ login: 'newuser' });
+
+// projects CRUD
+db.projects.insertOne({
+    name: 'CRUD Test Project',
+    description: 'Test',
+    key: 'CRUD',
+    owner_id: 1,
+    created_at: new Date()
+});
+
+db.projects.findOne({ key: 'CRUD' });
+db.projects.updateOne({ key: 'CRUD' }, { $set: { name: 'Updated CRUD Project' } });
+db.projects.deleteOne({ key: 'CRUD' });
+
+db.projects.find({ name: /Альфа/i });
+db.projects.find().sort({ created_at: -1 });
+
+// tasks CRUD
+db.tasks.insertOne({
+    title: 'CRUD Test Task',
+    description: 'Test task',
+    status: 'TODO',
+    project_id: 1,
+    creator_id: 1,
+    priority: 3,
+    created_at: new Date()
+});
+db.tasks.findOne({ title: 'CRUD Test Task' });
+db.tasks.updateOne({ title: 'CRUD Test Task' }, { $set: { status: 'DONE' } });
+db.tasks.deleteOne({ title: 'CRUD Test Task' });
+
+db.tasks.find({ project_id: 1 }).sort({ priority: -1 });
+db.tasks.find({ assignee_id: 1 });
+db.tasks.updateOne(
+    { _id: db.tasks.findOne()._id },
+    { $set: { status: 'DONE', updated_at: new Date() } }
+);
+
+
 db.comments.insertOne({
     task_id: 10,
     author: 'Тестовый Пользователь',

@@ -1,5 +1,72 @@
 db = db.getSiblingDB('myservice_mongo');
 
+db.createCollection('users', {
+    validator: {
+        $jsonSchema: {
+            bsonType: 'object',
+            required: ['login', 'password_hash', 'first_name', 'last_name', 'email', 'created_at'],
+            properties: {
+                login: { bsonType: 'string' },
+                password_hash: { bsonType: 'string' },
+                first_name: { bsonType: 'string' },
+                last_name: { bsonType: 'string' },
+                email: { bsonType: 'string', pattern: '^.+@.+$' },
+                created_at: { bsonType: 'date' },
+                is_deleted: { bsonType: 'bool' }
+            }
+        }
+    }
+});
+db.users.createIndex({ login: 1 }, { unique: true });
+db.users.createIndex({ first_name: 1, last_name: 1 });
+
+
+db.createCollection('projects', {
+    validator: {
+        $jsonSchema: {
+            bsonType: 'object',
+            required: ['name', 'owner_id', 'created_at'],
+            properties: {
+                name: { bsonType: 'string' },
+                description: { bsonType: 'string' },
+                key: { bsonType: 'string' },
+                owner_id: { bsonType: 'int' },
+                created_at: { bsonType: 'date' }
+            }
+        }
+    }
+});
+db.projects.createIndex({ name: 1 });
+db.projects.createIndex({ owner_id: 1 });
+
+
+db.createCollection('tasks', {
+    validator: {
+        $jsonSchema: {
+            bsonType: 'object',
+            required: ['title', 'status', 'project_id', 'creator_id', 'created_at'],
+            properties: {
+                title: { bsonType: 'string' },
+                description: { bsonType: 'string' },
+                status: {
+                    bsonType: 'string',
+                    enum: ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']
+                },
+                project_id: { bsonType: 'int' },
+                assignee_id: { bsonType: 'int' },
+                creator_id: { bsonType: 'int' },
+                priority: { bsonType: 'int', minimum: 1, maximum: 5 },
+                created_at: { bsonType: 'date' },
+                updated_at: { bsonType: 'date' }
+            }
+        }
+    }
+});
+db.tasks.createIndex({ project_id: 1 });
+db.tasks.createIndex({ assignee_id: 1 });
+db.tasks.createIndex({ creator_id: 1 });
+db.tasks.createIndex({ status: 1 });
+
 
 db.createCollection('comments', {
     validator: {
