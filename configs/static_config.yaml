@@ -69,8 +69,9 @@ components_manager:
             task_processor: main-task-processor  # Run it on CPU bound task processor
 
         postgres-db-1:
-            dbconnection: $pg-connection
-            dbconnection#env: DB_CONNECTION
+            # dbconnection: $pg-connection
+            dbconnection: postgresql://myservice:myservice@postgres:5432/myservice_db
+            # dbconnection#env: DB_CONNECTION
             blocking_task_processor: fs-task-processor
             dns_resolver: async
             sync-start: true
@@ -162,3 +163,18 @@ components_manager:
             task_processor: main-task-processor
             auth: 
                 type: jwt-auth
+
+        # # MongoDB endpoints
+        # handler-mongo-get-users:
+        #     path: /api/mongo/users
+        #     method: GET
+        #     task_processor: main-task-processor
+        #     auth:
+        #         type: jwt-auth
+
+        # handler-mongo-get-user-by-login:
+        #     path: /api/mongo/users/search
+        #     method: GET
+        #     task_processor: main-task-processor
+        #     auth:
+        #         type: jwt-auths

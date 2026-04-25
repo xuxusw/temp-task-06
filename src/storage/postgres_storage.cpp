@@ -65,7 +65,7 @@ std::optional<models::User> PostgresStorage::GetUserByLogin(const std::string& l
     auto result = pg_cluster_->Execute(
         userver::storages::postgres::ClusterHostType::kSlave,
         R"(
-            SELECT id, login, password_hash, first_name, last_name, email, created_at
+            SELECT id, login, password_hash, first_name, last_name, email, created_at, is_deleted
             FROM users
             WHERE login = $1 AND is_deleted = FALSE
         )",
@@ -85,7 +85,7 @@ std::vector<models::User> PostgresStorage::SearchUsersByLogin(const std::string&
     auto result = pg_cluster_->Execute(
         userver::storages::postgres::ClusterHostType::kSlave,
         R"(
-            SELECT id, login, password_hash, first_name, last_name, email, created_at
+            SELECT id, login, password_hash, first_name, last_name, email, created_at, is_deleted
             FROM users
             WHERE login ILIKE $1 AND is_deleted = FALSE
             LIMIT 100
@@ -106,7 +106,7 @@ std::vector<models::User> PostgresStorage::SearchUsersByFirstNameLastName(
     auto result = pg_cluster_->Execute(
         userver::storages::postgres::ClusterHostType::kSlave,
         R"(
-            SELECT id, login, password_hash, first_name, last_name, email, created_at
+            SELECT id, login, password_hash, first_name, last_name, email, created_at, is_deleted
             FROM users
             WHERE first_name ILIKE $1 
               AND last_name ILIKE $2 

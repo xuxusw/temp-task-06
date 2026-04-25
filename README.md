@@ -26,6 +26,15 @@ myservice/
 │   ├── queries.js
 │   ├── schema_design.md
 │   ├── validation.js
+├── src/
+│   ├── handlers/
+│   │   ├── comment_handlers.cpp
+│   │   ├── comment_handlers.hpp
+│   ├── models/
+│   │   ├── comment.hpp
+│   ├── storage/
+│   │   ├── mongodb_storage.cpp
+│   │   ├── mongodb_storage.hpp
 ```
 
 Для основных сущностей (`users`, `projects`, `tasks`) в MongoDB созданы коллекции с тестовыми данными (`data.js`), валидацией (`validation.js`) и CRUD-примерами (`queries.js`). 
@@ -35,7 +44,8 @@ comments - иерархическая структура (вложенные rep
 task_history - лог изменений (много записей, не нагружают основную БД);  
 notifications - разные типы уведомлений с разными полями.  
 
-`replies` вложены в документ комментария `comments` (embedded).
+`replies` вложены в документ комментария `comments` (embedded).  
+`metadata` вложены в документ уведомления `notifications` (embedded).
 
 ## Docker run
 Start the container:
@@ -54,6 +64,77 @@ Now you can run commands from `queries.js`.
 After you are done, stop and delete the container:
 ```
 docker compose down -v
+```
+## MongoDB API
+
+There is API integration with Mongo for `comments` collection. Uses new `comment_handlers.hpp/cpp` with support for nested reply structure using embedded documents. Each comment document contains a `replies` array with nested reply objects (author, text, timestamp), avoiding separate JOIN operations.  
+
+**API endpoints** (implemented in `comment_handlers.hpp/cpp`):
+  - `POST /api/tasks/{taskId}/comments` - Add comment to task
+  - `GET /api/tasks/{taskId}/comments` - Get all comments with nested replies
+  - `POST /api/comments/{commentId}/replies` - Add reply to existing comment
+
+API integration for `users`, `projects`, `tasks` remains in PostgeSQL. 
+
+To get a token for login you need to run postgres container as well. These commands allow to run all the containers needed:
+```
+docker compose down
+docker compose build --no-cache myservice
+docker compose up -d
+# or docker compose up (to see logs)
+```
+```
+docker compose exec mongodb mongosh myservice_mongo --eval "show collections"
+```
+```
+curl http://127.0.0.1:8082/hello?name=userver
+```
+```
+docker compose exec postgres pg_isready -U myservice
+```
+```
+docker compose exec postgres psql -U myservice -d myservice_db -c "\dt"
+```
+There is testuser already registered in postgres database, so you can just login:
+```
+curl -v -X POST http://localhost:8082/api/login   -H "Content-Type: application/json"   -d '{
+    "login": "testuser",
+    "password": "123456"
+  }'
+```
+```
+TOKEN="<your-token>"
+```
+#### POST /api/tasks/{taskId}/comments
+```
+curl -X POST "http://localhost:8082/api/tasks/1/comments" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "author": "Тестовый Пользователь",
+    "text": "Это тестовый комментарий из curl"
+  }'
+```
+#### see all comments
+```
+docker compose exec mongodb mongosh myservice_mongo --eval "db.comments.find().pretty()"
+```
+#### change <comment_id> to real comment ObjectId from Mongo
+COMMENT_ID="<comment_id>"  
+for example:  
+COMMENT_ID="69ecc862cd332588e20220b5"
+``` 
+curl -X POST "http://localhost:8082/api/comments/$COMMENT_ID/replies" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "author": "Ответчик",
+    "text": "Это ответ на комментарий"
+  }'
+```  
+#### see all comments again (after changing one)
+```
+docker compose exec mongodb mongosh myservice_mongo --eval "db.comments.find().pretty()"
 ```
 
 ## PostgeSQL
@@ -273,21 +354,21 @@ myservice/
 docker build -t myservice .
 
 # Run container (without Swagger UI)
-docker run -d -p 8080:8080 --name myservice_test myservice 
+docker run -d -p 8082:8080 --name myservice_test myservice 
 
 # Or using docker compose (with Swagger UI)
 docker compose up -d
 (docker-compose up -d)
 ```
-* Service available at: http://localhost:8080 
-* Swagger UI documentation available at: http://localhost:8081
+* Service available at: http://localhost:8082 
+* Swagger UI documentation available at: http://localhost:8083
 
 **Note:** Swagger UI in browser may show CORS errors. For live testing, use Postman (import `openapi.yaml`) or curl commands.
 
 ## Examples
 ### Register
 ```
-curl -X POST http://localhost:8080/api/register \
+curl -X POST http://localhost:8082/api/register \
   -H "Content-Type: application/json" \
   -d '{
     "login": "user",
@@ -299,7 +380,7 @@ curl -X POST http://localhost:8080/api/register \
 ```
 ### Login 
 ```
-curl -X POST http://localhost:8080/api/login \
+curl -X POST http://localhost:8082/api/login \
   -H "Content-Type: application/json" \
   -d '{
     "login": "user",
@@ -311,16 +392,16 @@ curl -X POST http://localhost:8080/api/login \
 TOKEN="<your-token>"
 
 # login search
-curl -X GET "http://localhost:8080/api/users/search?login=ivan" \
+curl -X GET "http://localhost:8082/api/users/search?login=ivan" \
   -H "Authorization: Bearer $TOKEN"
 
 # first_name and last_name masks search
-curl -X GET "http://localhost:8080/api/users/search?first_name=Ivan&last_name=Ivanov" \
+curl -X GET "http://localhost:8082/api/users/search?first_name=Ivan&last_name=Ivanov" \
   -H "Authorization: Bearer $TOKEN"
 ```
 ### Create Project (Authenticated)
 ```
-curl -X POST http://localhost:8080/api/projects \
+curl -X POST http://localhost:8082/api/projects \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -331,7 +412,7 @@ curl -X POST http://localhost:8080/api/projects \
 ```
 ### Get Projects (Authenticated)
 ```
-curl -X GET http://localhost:8080/api/projects \
+curl -X GET http://localhost:8082/api/projects \
   -H "Authorization: Bearer $TOKEN"
 ```
 ### Create Task (Authenticated)
@@ -339,7 +420,7 @@ The project with the using project id must exist.
 (/api/projects/{id}/tasks)
 
 ```
-curl -X POST http://localhost:8080/api/projects/1/tasks \
+curl -X POST http://localhost:8082/api/projects/1/tasks \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -397,7 +478,7 @@ curl -X POST http://localhost:8080/api/projects/1/tasks \
 OpenAPI 3.0 specification: [`openapi.yaml`](openapi.yaml).
 Created with VS Code OpenAPI extension and validated in Swagger Editor. 
 
-View interactive documentation at `http://localhost:8081` Swagger UI (after `docker compose up -d`).
+View interactive documentation at `http://localhost:8083` Swagger UI (after `docker compose up -d`).
 Or view without running service [Swagger Editor](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/xuxusw/myservice/main/openapi.yaml) (CORS errors. For live testing, use Postman (import `openapi.yaml`) or curl commands.)
 
 

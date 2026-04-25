@@ -26,6 +26,7 @@
 #include "handlers/project_handlers.hpp"
 #include "handlers/task_handlers.hpp"
 #include "handlers/comment_handlers.hpp"
+// #include "handlers/mongo_user_handlers.hpp"
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
 #include "storage/mongodb_storage.hpp"
@@ -62,6 +63,8 @@ int main(int argc, char* argv[]) {
             // .Append<myservice::storage::InMemoryStorage>()
             .Append<myservice::storage::PostgresStorage>()
             .Append<myservice::storage::MongoStorage>()
+            // .Append<myservice::handlers::MongoGetUsersHandler>()
+            // .Append<myservice::handlers::MongoGetUserByLoginHandler>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);

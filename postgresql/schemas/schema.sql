@@ -1,4 +1,4 @@
-CREATE DATABASE myservice_db;
+-- CREATE DATABASE myservice_db;
 
 \c myservice_db;
 
