@@ -14,6 +14,8 @@
 
 #include <userver/utils/daemon_run.hpp>
 
+// #include <userver/server/handlers/server_monitor.hpp>
+
 #include <hello.hpp>
 #include <hello_grpc.hpp>     
 #include <hello_mongo.hpp>    
@@ -63,8 +65,7 @@ int main(int argc, char* argv[]) {
             // .Append<myservice::storage::InMemoryStorage>()
             .Append<myservice::storage::PostgresStorage>()
             .Append<myservice::storage::MongoStorage>()
-            // .Append<myservice::handlers::MongoGetUsersHandler>()
-            // .Append<myservice::handlers::MongoGetUserByLoginHandler>()
+            // .Append<userver::server::handlers::ServerMonitor>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);

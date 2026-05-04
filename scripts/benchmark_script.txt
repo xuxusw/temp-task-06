@@ -1,0 +1,26 @@
+HEADER_FILE=$(mktemp)
+echo "Authorization: Bearer $TOKEN" > $HEADER_FILE
+
+echo "BENCHMARK BEFORE OPTIMIZATION"
+
+echo ""
+echo "Testing GET /api/projects"
+wrk -t2 -c10 -d30s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8082/api/projects
+
+echo ""
+echo "Testing GET /api/tasks/1/comments"
+wrk -t2 -c10 -d30s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8082/api/tasks/1/comments
+
+echo ""
+echo "Testing GET /api/users/search"
+wrk -t2 -c5 -d30s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8082/api/users/search?first_name=test"
+
+echo ""
+echo "Testing POST /api/login"
+wrk -t2 -c5 -d30s -s scripts/post_login.lua \
+  http://localhost:8082/api/login
+
+rm $HEADER_FILE

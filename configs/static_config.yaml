@@ -7,6 +7,10 @@ components_manager:
         fs-task-processor:            # Make a separate task processor for filesystem bound tasks.
             worker_threads: $worker-fs-threads
 
+        # monitor-task-processor:
+        #     worker_threads: 1
+        #     thread_name: mon
+
     default_task_processor: main-task-processor
 
     components:                       # Configuring components that were registered via component_list
@@ -14,6 +18,9 @@ components_manager:
             listener:                 # configuring the main listening socket...
                 port: $server-port            # ...to listen on this port and...
                 task_processor: main-task-processor    # ...process incoming requests on this task processor.
+            # listener-monitor:      # для метрик
+            #     port: $monitor-port
+            #     task_processor: main-task-processor
 
         logging:
             fs-task-processor: fs-task-processor
@@ -164,17 +171,17 @@ components_manager:
             auth: 
                 type: jwt-auth
 
-        # # MongoDB endpoints
-        # handler-mongo-get-users:
-        #     path: /api/mongo/users
+        # handler-server-monitor:
+        #     path: /statistics
         #     method: GET
-        #     task_processor: main-task-processor
-        #     auth:
-        #         type: jwt-auth
+        #     task_processor: monitor-task-processor
+        #     common-labels:
+        #         application: sample application
+        #         zone: some
+        #     format: json
 
-        # handler-mongo-get-user-by-login:
-        #     path: /api/mongo/users/search
+        # handler-server-monitor:
+        #     path: /service/monitor
         #     method: GET
         #     task_processor: main-task-processor
-        #     auth:
-        #         type: jwt-auths
+        #     handler-name: handler-monitor-api

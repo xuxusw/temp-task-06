@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "8082:8080"
+      # - "8085:8085" # для метрик
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432

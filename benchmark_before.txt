@@ -1,0 +1,42 @@
+BEFORE OPTIMIZATION Пн 04 мая 2026 17:00:53 MSK
+
+GET /api/projects:
+Running 30s test @ http://localhost:8082/api/projects
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.34ms    4.51ms  58.62ms   77.12%
+    Req/Sec   542.58    103.49   801.00     69.87%
+  32435 requests in 30.06s, 48.87MB read
+Requests/sec:   1079.19
+Transfer/sec:      1.63MB
+
+GET /api/tasks/1/comments:
+Running 30s test @ http://localhost:8082/api/tasks/1/comments
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    11.50ms    5.61ms  81.54ms   78.87%
+    Req/Sec   440.90     76.84   626.00     70.43%
+  8269 requests in 9.44s, 3.53MB read
+  Non-2xx or 3xx responses: 8269
+Requests/sec:    876.31
+Transfer/sec:    382.53KB
+
+GET /api/users/search:
+Running 30s test @ http://localhost:8082/api/users/search?first_name=test
+  2 threads and 5 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.59ms    2.61ms  25.46ms   76.91%
+    Req/Sec   359.59     69.08   490.00     61.76%
+  2449 requests in 3.43s, 1.23MB read
+Requests/sec:    713.49
+Transfer/sec:    365.80KB
+
+POST /api/login:
+Running 30s test @ http://localhost:8082/api/login
+  2 threads and 5 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.02ms    2.31ms  16.37ms   73.54%
+    Req/Sec   394.78     50.74   485.00     77.78%
+  357 requests in 498.21ms, 216.85KB read
+Requests/sec:    716.57
+Transfer/sec:    435.26KB
