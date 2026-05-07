@@ -7,6 +7,10 @@
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
 
+namespace myservice::cache {
+class CacheManager;
+}
+
 namespace myservice {
 namespace handlers {
 
@@ -23,7 +27,8 @@ public:
     
 private:
     // storage::InMemoryStorage& storage_;
-    storage::PostgresStorage& storage_; 
+    storage::PostgresStorage& storage_;
+    cache::CacheManager& cache_; 
 };
 
 class GetProjectsHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -39,7 +44,8 @@ public:
     
 private:
     // storage::InMemoryStorage& storage_;
-    storage::PostgresStorage& storage_; 
+    storage::PostgresStorage& storage_;
+    cache::CacheManager& cache_; 
 };
 
 } // namespace handlers

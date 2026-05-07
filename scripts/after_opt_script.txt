@@ -1,0 +1,17 @@
+{
+  echo "AFTER OPTIMIZATION $(date)"
+  echo ""
+  echo "GET /api/projects:"
+  wrk -t2 -c10 -d30s -H "Authorization: Bearer $TOKEN" http://localhost:8082/api/projects 2>&1
+  echo ""
+  echo "GET /api/tasks/1/comments:"
+  wrk -t2 -c10 -d30s -H "Authorization: Bearer $TOKEN" http://localhost:8082/api/tasks/1/comments 2>&1
+  echo ""
+  echo "GET /api/users/search:"
+  wrk -t2 -c5 -d30s -H "Authorization: Bearer $TOKEN" "http://localhost:8082/api/users/search?first_name=test" 2>&1
+  echo ""
+  echo "POST /api/login:"
+  wrk -t2 -c5 -d30s -s scripts/post_login.lua http://localhost:8082/api/login 2>&1
+} > src/scripts/results/benchmark_after.txt
+
+cat src/scripts/results/benchmark_after.txt

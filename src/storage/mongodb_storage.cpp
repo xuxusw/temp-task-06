@@ -3,6 +3,7 @@
 #include <userver/formats/bson.hpp>
 #include <userver/storages/mongo/component.hpp>
 #include <userver/storages/mongo/operations.hpp>
+#include <userver/logging/log.hpp>
 
 namespace myservice {
 namespace storage {
@@ -53,6 +54,28 @@ void MongoStorage::AddReply(const std::string& comment_id, const models::Reply& 
 void MongoStorage::DeleteComment(const std::string& id) {
     auto oid = userver::formats::bson::Oid(id);
     GetCommentsCollection().DeleteOne(userver::formats::bson::MakeDoc("_id", oid));
+}
+
+int MongoStorage::GetTaskIdByCommentId(const std::string& comment_id) {
+    try {
+        auto filter = userver::formats::bson::MakeDoc("_id", userver::formats::bson::Oid(comment_id));
+        auto result = GetCommentsCollection().FindOne(filter);
+        
+        if (result) {
+            const auto& doc = *result;
+            try {
+                auto task_id = doc["task_id"].As<int>();
+                return task_id;
+            } catch (const std::exception&) {
+                // task_id doesnt exist or wrong type
+                return -1;
+            }
+        }
+        return -1;
+    } catch (const std::exception& e) {
+        LOG_ERROR() << "Failed to get task_id for comment: " << comment_id << ", error: " << e.what();
+        return -1;
+    }
 }
 
 }  // namespace storage

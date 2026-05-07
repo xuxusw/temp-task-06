@@ -6,6 +6,10 @@
 
 #include "storage/mongodb_storage.hpp"
 
+namespace myservice::cache {
+class CacheManager;
+}
+
 namespace myservice {
 namespace handlers {
 
@@ -22,6 +26,7 @@ public:
 
 private:
     storage::MongoStorage& mongo_storage_;
+    cache::CacheManager& cache_;
 };
 
 class GetCommentsHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -37,6 +42,7 @@ public:
 
 private:
     storage::MongoStorage& mongo_storage_;
+    cache::CacheManager& cache_;
 };
 
 class AddReplyHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -52,6 +58,7 @@ public:
 
 private:
     storage::MongoStorage& mongo_storage_;
+    cache::CacheManager& cache_;
 };
 
 }  // namespace handlers

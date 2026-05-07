@@ -185,3 +185,5 @@ components_manager:
         #     method: GET
         #     task_processor: main-task-processor
         #     handler-name: handler-monitor-api
+
+        cache-manager:

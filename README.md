@@ -1,8 +1,8 @@
 # myservice
 
-Проектирование и работа с MongoDB (вариант 8 "Управление проектами").
+Оптимизация производительности через кеширование и rate limiting (вариант 8 "Управление проектами").
 
-This work adds MongoDB collections to the REST API service (in main branch) with PostgreSQL database (and partial Mongo database).
+This work adds cache alrogithm and rate limiting to the REST API service with PostgreSQL database and partial Mongo database.
 
 C++ service for project and task management that uses [userver framework](https://github.com/userver-framework/userver).
 
@@ -13,6 +13,83 @@ C++ service for project and task management that uses [userver framework](https:
 * MongoDB 7
 * OpenAPI 3.0
 * Docker + Docker Compose
+
+## Результаты оптимизации производительности (cache and rate limiting)
+
+### Выполненные оптимизации
+| Компонент | Реализация | Стратегия | TTL |
+|-----------|-----------|-----------|-----|
+| Кеш проектов | In-memory Cache | Cache-Aside | 300 сек |
+| Кеш комментариев | In-memory Cache | Cache-Aside | 60 сек |
+| Rate limit для /login | Sliding Window | 10 запросов/мин на IP | - |
+
+### Сравнение производительности
+| Endpoint | RPS (до) | RPS (после) | Latency avg (до) | Latency avg (после) |
+|----------|----------|-------------|------------------|---------------------|
+| GET /api/projects | 1079 | 1791 (+66%) | 9.34ms | 6.58ms (-30%) |
+| GET /api/users/search | 713 | 877 (+23%) | 5.59ms | 4.57ms (-18%) |
+| POST /api/login | 716 | контролируется | 5.02ms | 3.50ms (-30%) |
+
+### Rate limiting параметры
+
+- **Алгоритм:** Sliding Window
+- **Лимит:** 5 запросов в минуту на IP
+- **HTTP код:** 429 Too Many Requests
+- **Заголовки:** X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After
+
+### Cache hit rate (по логам)
+
+- GET /api/projects: множественные `Cache HIT` подтверждены
+- GET /api/comments: множественные `Cache HIT` подтверждены
+
+### Новые файлы:
+```
+myservice/
+├── scripts/
+│   ├── results/
+│   │   ├── benchmark_before.txt (2)
+│   │   ├── benchmark_after.txt (4)
+│   │   ├── logs.txt
+│   ├── after_opt_script.txt
+│   ├── before_opt_script.txt
+│   ├── benchmark_script.txt
+│   ├── post_login.lua
+├── src/
+│   ├── cache/
+│   │   ├── cache_manager.cpp
+│   │   ├── cache_manager.hpp
+│   ├── rate_limit/
+│   │   ├── sliding_window.cpp
+│   │   ├── sliding_window.hpp
+├── perfomance_analysis.md
+├── perfomance_design.md
+```
+
+plus some changes in project, comment and auth handlers and new method in mongodb_storage
+
+Caching and rate limiting strategy described in `perfomance_design.md`. Results in `perfomance_analysis.md` and in `scripts/results/...`. 
+
+## How to test:
+Run containers:
+```
+docker compose down
+docker compose build --no-cache myservice
+docker compose up -d
+# or docker compose up (to see logs)
+```
+
+Login and get a token:
+```
+curl -v -X POST http://localhost:8082/api/login   -H "Content-Type: application/json"   -d '{
+    "login": "testuser",
+    "password": "123456"
+  }'
+```
+```
+TOKEN="<your-token>"
+```
+
+Copy and paste commands from `scripts` dir.
 
 ## MongoDB
 

@@ -54,6 +54,8 @@ add_library(
     src/handlers/task_handlers.cpp
     src/storage/mongodb_storage.cpp
     src/handlers/comment_handlers.cpp
+    src/cache/cache_manager.cpp 
+    src/rate_limit/sliding_window.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs

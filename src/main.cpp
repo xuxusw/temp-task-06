@@ -32,6 +32,7 @@
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
 #include "storage/mongodb_storage.hpp"
+#include "cache/cache_manager.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -53,6 +54,10 @@ int main(int argc, char* argv[]) {
             .AppendComponentList(userver::ugrpc::server::MinimalComponentList())
             .Append<myservice::HelloGrpc>()
             .Append<myservice::auth::JwtAuthComponent>()
+            // .Append<myservice::storage::InMemoryStorage>()
+            .Append<myservice::storage::PostgresStorage>()
+            .Append<myservice::storage::MongoStorage>()
+            .Append<myservice::cache::CacheManager>()
             .Append<myservice::handlers::RegisterHandler>()
             .Append<myservice::handlers::LoginHandler>()
             .Append<myservice::handlers::UserSearchHandler>()
@@ -62,9 +67,6 @@ int main(int argc, char* argv[]) {
             .Append<myservice::handlers::AddCommentHandler>()
             .Append<myservice::handlers::GetCommentsHandler>()
             .Append<myservice::handlers::AddReplyHandler>()
-            // .Append<myservice::storage::InMemoryStorage>()
-            .Append<myservice::storage::PostgresStorage>()
-            .Append<myservice::storage::MongoStorage>()
             // .Append<userver::server::handlers::ServerMonitor>()
         ;
 

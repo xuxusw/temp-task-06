@@ -1,7 +1,7 @@
 HEADER_FILE=$(mktemp)
 echo "Authorization: Bearer $TOKEN" > $HEADER_FILE
 
-echo "BENCHMARK BEFORE OPTIMIZATION"
+echo "BENCHMARK AFTER OPTIMIZATION"
 
 echo ""
 echo "Testing GET /api/projects"

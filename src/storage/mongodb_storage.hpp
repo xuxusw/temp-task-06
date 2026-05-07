@@ -27,6 +27,7 @@ public:
     std::optional<models::Comment> GetCommentById(const std::string& id);
     void AddReply(const std::string& comment_id, const models::Reply& reply);
     void DeleteComment(const std::string& id);
+    int GetTaskIdByCommentId(const std::string& comment_id);
 
 private:
     userver::storages::mongo::PoolPtr pool_;

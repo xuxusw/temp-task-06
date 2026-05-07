@@ -2,6 +2,9 @@
 
 #include <userver/formats/json.hpp>
 #include <userver/server/http/http_status.hpp>
+#include <userver/logging/log.hpp>
+
+#include "cache/cache_manager.hpp"
 
 namespace myservice {
 namespace handlers {
@@ -11,7 +14,8 @@ AddCommentHandler::AddCommentHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      mongo_storage_(context.FindComponent<storage::MongoStorage>()) {}
+      mongo_storage_(context.FindComponent<storage::MongoStorage>()),
+      cache_(context.FindComponent<cache::CacheManager>()) {}
 
 std::string AddCommentHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -30,6 +34,10 @@ std::string AddCommentHandler::HandleRequestThrow(
     comment.created_at = std::chrono::system_clock::now();
     
     mongo_storage_.InsertComment(comment);
+
+    std::string cache_key = "comments:task:" + std::to_string(task_id);
+    cache_.Invalidate(cache_key);
+    LOG_INFO() << "Comment added, cache invalidated for task: " << task_id;
     
     request.GetHttpResponse().SetStatus(userver::server::http::HttpStatus::kCreated);
     return R"({"status": "ok"})";
@@ -40,13 +48,24 @@ GetCommentsHandler::GetCommentsHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      mongo_storage_(context.FindComponent<storage::MongoStorage>()) {}
+      mongo_storage_(context.FindComponent<storage::MongoStorage>()),
+      cache_(context.FindComponent<cache::CacheManager>()) {}
 
 std::string GetCommentsHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
     userver::server::request::RequestContext&) const {
     
     int task_id = std::stoi(request.GetPathArg("taskId"));
+    std::string cache_key = "comments:task:" + std::to_string(task_id);
+    
+    auto cached = cache_.Get(cache_key);
+    if (cached.has_value()) {
+        LOG_INFO() << "Comments returned from CACHE for task: " << task_id;
+        return *cached;
+    }
+    
+    LOG_INFO() << "Comments cache MISS for task: " << task_id << ", querying MongoDB";
+    // if not in cache - then in mongodb
     auto comments = mongo_storage_.GetCommentsByTask(task_id);
     
     // JSON ответ
@@ -64,7 +83,14 @@ std::string GetCommentsHandler::HandleRequestThrow(
         }
     }
     
-    return userver::formats::json::ToString(result.ExtractValue());
+    // return userver::formats::json::ToString(result.ExtractValue());
+
+    std::string response = userver::formats::json::ToString(result.ExtractValue());
+    
+    // save to cache for 60 sec? or how much will be better?
+    cache_.Set(cache_key, response, 60);
+    
+    return response;
 }
 
 // POST /api/comments/{commentId}/replies
@@ -72,7 +98,8 @@ AddReplyHandler::AddReplyHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
-      mongo_storage_(context.FindComponent<storage::MongoStorage>()) {}
+      mongo_storage_(context.FindComponent<storage::MongoStorage>()),
+      cache_(context.FindComponent<cache::CacheManager>()) {}
 
 std::string AddReplyHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -88,9 +115,21 @@ std::string AddReplyHandler::HandleRequestThrow(
     reply.text = json["text"].As<std::string>();
     reply.created_at = std::chrono::system_clock::now();
     
+    int task_id = mongo_storage_.GetTaskIdByCommentId(comment_id);
+    
     // в массив replies (MongoDB $push)
     mongo_storage_.AddReply(comment_id, reply);
-    
+
+    // cache invalidation
+    if (task_id > 0) {
+        std::string cache_key = "comments:task:" + std::to_string(task_id);
+        cache_.Invalidate(cache_key);
+        LOG_INFO() << "Reply added, cache invalidated for task: " << task_id;
+    } else {
+        cache_.InvalidateByPrefix("comments:task:");
+        LOG_INFO() << "Reply added, cache invalidated by prefix";
+    }
+
     request.GetHttpResponse().SetStatus(userver::server::http::HttpStatus::kCreated);
     return R"({"status": "ok"})";
 }

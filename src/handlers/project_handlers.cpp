@@ -3,6 +3,9 @@
 #include <userver/formats/json.hpp>
 #include <userver/server/http/http_status.hpp>
 
+#include "cache/cache_manager.hpp"
+#include <userver/logging/log.hpp> 
+
 namespace myservice {
 namespace handlers {
 
@@ -11,7 +14,8 @@ CreateProjectHandler::CreateProjectHandler(
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
-      storage_(context.FindComponent<storage::PostgresStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()),
+      cache_(context.FindComponent<cache::CacheManager>()) {}
 
 std::string CreateProjectHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -35,6 +39,9 @@ std::string CreateProjectHandler::HandleRequestThrow(
     project.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateProject(project);
+
+    cache_.Invalidate("projects:all");
+    LOG_INFO() << "Project created, cache invalidated";
     
     userver::formats::json::ValueBuilder result;
     result["id"] = created->id;
@@ -52,11 +59,22 @@ GetProjectsHandler::GetProjectsHandler(
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
-      storage_(context.FindComponent<storage::PostgresStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()),
+      cache_(context.FindComponent<cache::CacheManager>()) {}
 
 std::string GetProjectsHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
     userver::server::request::RequestContext& context) const {
+
+    const std::string cache_key = "projects:all";
+    
+    auto cached = cache_.Get(cache_key);
+    if (cached.has_value()) {
+        LOG_INFO() << "Projects returned from CACHE";
+        return *cached;
+    }
+    
+    LOG_INFO() << "Projects cache MISS, querying PostgreSQL";
     
     auto projects = storage_.GetAllProjects();
     
@@ -80,7 +98,13 @@ std::string GetProjectsHandler::HandleRequestThrow(
         result.PushBack(std::move(item));
     }
     
-    return userver::formats::json::ToString(result.ExtractValue());
+    // return userver::formats::json::ToString(result.ExtractValue());
+    std::string response = userver::formats::json::ToString(result.ExtractValue());
+    
+    // save to cache for 5 mins
+    cache_.Set(cache_key, response, 300);
+    
+    return response;
 }
 
 } // namespace handlers

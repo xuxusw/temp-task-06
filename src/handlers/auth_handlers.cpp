@@ -7,8 +7,14 @@
 #include "auth/jwt.hpp"
 #include "models/user.hpp"
 
+#include "rate_limit/sliding_window.hpp"
+#include <userver/logging/log.hpp>
+
 namespace myservice {
 namespace handlers {
+
+// 5 попыток в минуту на IP
+static rate_limit::SlidingWindowLimiter login_limiter(5, 60);
 
 // ссылка на компонент
 RegisterHandler::RegisterHandler(
@@ -75,6 +81,22 @@ LoginHandler::LoginHandler(
 std::string LoginHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
     userver::server::request::RequestContext&) const {
+
+    std::string client_ip = request.GetRemoteAddress().PrimaryAddressString();
+    
+    // check rate limit
+    if (!login_limiter.TryAcquire(client_ip)) {
+        auto info = login_limiter.GetInfo(client_ip);
+        
+        request.GetHttpResponse().SetStatus(userver::server::http::HttpStatus::kTooManyRequests);
+        request.GetHttpResponse().SetHeader(std::string("X-RateLimit-Limit"), std::to_string(info.limit));
+        request.GetHttpResponse().SetHeader(std::string("X-RateLimit-Remaining"), std::to_string(info.remaining));
+        request.GetHttpResponse().SetHeader(std::string("X-RateLimit-Reset"), std::to_string(info.reset_seconds));
+        request.GetHttpResponse().SetHeader(std::string("Retry-After"), std::to_string(info.reset_seconds));
+        
+        LOG_WARNING() << "Rate limit exceeded for IP: " << client_ip;
+        return R"({"error": "Too many login attempts. Please try again later."})";
+    }
     
     auto json = userver::formats::json::FromString(request.RequestBody());
     
@@ -92,7 +114,7 @@ std::string LoginHandler::HandleRequestThrow(
         request.GetHttpResponse().SetStatus(userver::server::http::HttpStatus::kUnauthorized);
         return R"({"error": "Invalid credentials"})";
     }
-    
+
     // std::string password_hash = bcrypt::generate_hash(password, 10);
     std::string password_hash = userver::crypto::hash::Sha256(password);
     if (user->password_hash != password_hash) {
@@ -101,6 +123,11 @@ std::string LoginHandler::HandleRequestThrow(
     }
     
     std::string token = auth::GenerateToken(user->id);
+
+    // when login success - add limit info
+    auto info = login_limiter.GetInfo(client_ip);
+    request.GetHttpResponse().SetHeader(std::string("X-RateLimit-Limit"), std::to_string(info.limit));
+    request.GetHttpResponse().SetHeader(std::string("X-RateLimit-Remaining"), std::to_string(info.remaining));
     
     userver::formats::json::ValueBuilder result;
     result["token"] = token;
@@ -112,3 +139,4 @@ std::string LoginHandler::HandleRequestThrow(
 
 } // namespace handlers
 } // namespace myservice
+

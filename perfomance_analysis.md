@@ -115,3 +115,31 @@ Login Failure Rate per IP
 |POST /api/login|716 RPS (неограниченно)|5 попыток/мин на IP|защита от брутфорса|
  
 Cache hit rate ожидается: >90% для проектов (TTL 5 минут), >80% для комментариев (TTL 1 минута). инвалидация кеша происходит при создании новых проектов и добавлении комментариев.
+
+# Результаты оптимизации производительности
+
+### Выполненные оптимизации
+| Компонент | Реализация | Стратегия | TTL |
+|-----------|-----------|-----------|-----|
+| Кеш проектов | In-memory Cache | Cache-Aside | 300 сек |
+| Кеш комментариев | In-memory Cache | Cache-Aside | 60 сек |
+| Rate limit для /login | Sliding Window | 10 запросов/мин на IP | - |
+
+### Сравнение производительности
+| Endpoint | RPS (до) | RPS (после) | Latency avg (до) | Latency avg (после) |
+|----------|----------|-------------|------------------|---------------------|
+| GET /api/projects | 1079 | 1791 (+66%) | 9.34ms | 6.58ms (-30%) |
+| GET /api/users/search | 713 | 877 (+23%) | 5.59ms | 4.57ms (-18%) |
+| POST /api/login | 716 | контролируется | 5.02ms | 3.50ms (-30%) |
+
+### Rate limiting параметры
+
+- **Алгоритм:** Sliding Window
+- **Лимит:** 5 запросов в минуту на IP
+- **HTTP код:** 429 Too Many Requests
+- **Заголовки:** X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After
+
+### Cache hit rate (по логам)
+
+- GET /api/projects: множественные `Cache HIT` подтверждены
+- GET /api/comments: множественные `Cache HIT` подтверждены
