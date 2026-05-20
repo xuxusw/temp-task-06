@@ -7,6 +7,12 @@
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
 
+#include <memory>
+
+namespace event {
+class EventProducer;
+}
+
 namespace myservice {
 namespace handlers {
 
@@ -24,6 +30,7 @@ public:
 private:
     // storage::InMemoryStorage& storage_;  // ссылка 
     storage::PostgresStorage& storage_; 
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 class LoginHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -40,6 +47,7 @@ public:
 private:
     // storage::InMemoryStorage& storage_;  // ссылка
     storage::PostgresStorage& storage_;
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 } // namespace handlers

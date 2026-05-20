@@ -4,10 +4,13 @@
 #include <userver/server/http/http_status.hpp>
 
 #include "cache/cache_manager.hpp"
-#include <userver/logging/log.hpp> 
+#include <userver/logging/log.hpp>
+
+#include "event/event_producer.hpp"
 
 namespace myservice {
 namespace handlers {
+
 
 CreateProjectHandler::CreateProjectHandler(
     const userver::components::ComponentConfig& config,
@@ -15,7 +18,8 @@ CreateProjectHandler::CreateProjectHandler(
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
-      cache_(context.FindComponent<cache::CacheManager>()) {}
+      cache_(context.FindComponent<cache::CacheManager>()),
+      event_producer_(std::make_shared<event::EventProducer>(context)) {}
 
 std::string CreateProjectHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -43,6 +47,18 @@ std::string CreateProjectHandler::HandleRequestThrow(
     cache_.Invalidate("projects:all");
     LOG_INFO() << "Project created, cache invalidated";
     
+    // публикация события ProjectCreated
+    if (created.has_value()) {
+        event::ProjectCreatedEvent event;
+        event.project_id = created->id;
+        event.name = created->name;
+        event.key = created->key;
+        event.owner_id = created->owner_id;
+        
+        std::string trace_id = request.GetHeader("X-Request-Id");
+        event_producer_->PublishProjectCreated(event, trace_id);
+    }
+    
     userver::formats::json::ValueBuilder result;
     result["id"] = created->id;
     result["name"] = created->name;
@@ -54,6 +70,7 @@ std::string CreateProjectHandler::HandleRequestThrow(
     return userver::formats::json::ToString(result.ExtractValue());
 }
 
+
 GetProjectsHandler::GetProjectsHandler(
     const userver::components::ComponentConfig& config,
     const userver::components::ComponentContext& context)
@@ -64,7 +81,7 @@ GetProjectsHandler::GetProjectsHandler(
 
 std::string GetProjectsHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
-    userver::server::request::RequestContext& context) const {
+    userver::server::request::RequestContext&) const {
 
     const std::string cache_key = "projects:all";
     
@@ -78,15 +95,6 @@ std::string GetProjectsHandler::HandleRequestThrow(
     
     auto projects = storage_.GetAllProjects();
     
-    // userver::formats::json::ValueBuilder result;
-    // for (size_t i = 0; i < projects.size(); ++i) {
-    //     result[i]["id"] = projects[i].id;
-    //     result[i]["name"] = projects[i].name;
-    //     result[i]["description"] = projects[i].description;
-    //     result[i]["key"] = projects[i].key;
-    //     result[i]["owner_id"] = projects[i].owner_id;
-    // }
-    
     userver::formats::json::ValueBuilder result = userver::formats::json::MakeArray();
     for (const auto& project : projects) {
         userver::formats::json::ValueBuilder item;
@@ -97,7 +105,7 @@ std::string GetProjectsHandler::HandleRequestThrow(
         item["owner_id"] = project.owner_id;
         result.PushBack(std::move(item));
     }
-    
+
     // return userver::formats::json::ToString(result.ExtractValue());
     std::string response = userver::formats::json::ToString(result.ExtractValue());
     

@@ -5,9 +5,14 @@
 #include <userver/server/handlers/http_handler_base.hpp>
 
 #include "storage/mongodb_storage.hpp"
+#include <memory>
 
 namespace myservice::cache {
 class CacheManager;
+}
+
+namespace event {
+class EventProducer;
 }
 
 namespace myservice {
@@ -27,6 +32,7 @@ public:
 private:
     storage::MongoStorage& mongo_storage_;
     cache::CacheManager& cache_;
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 class GetCommentsHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -59,6 +65,7 @@ public:
 private:
     storage::MongoStorage& mongo_storage_;
     cache::CacheManager& cache_;
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 }  // namespace handlers

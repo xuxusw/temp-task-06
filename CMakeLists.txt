@@ -10,6 +10,7 @@ find_package(
                grpc
                mongo
                postgresql
+               kafka
     QUIET
 )
 if(NOT userver_FOUND)
@@ -56,6 +57,7 @@ add_library(
     src/handlers/comment_handlers.cpp
     src/cache/cache_manager.cpp 
     src/rate_limit/sliding_window.cpp
+    src/event/event_producer.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs
@@ -63,6 +65,7 @@ target_link_libraries(
            userver::grpc
            userver::mongo
            userver::postgresql
+           userver::kafka
     PUBLIC jwt-cpp::jwt-cpp #
 )
 

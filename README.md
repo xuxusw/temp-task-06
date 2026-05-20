@@ -13,6 +13,105 @@ C++ service for project and task management that uses [userver framework](https:
 * MongoDB 7
 * OpenAPI 3.0
 * Docker + Docker Compose
+* Kafka 7.5.0
+
+## Проектирование Event-Driven архитектуры
+### Поток данных:
+```
+Client -> myservice (Producer) -> Kafka -> Event Consumer -> БД (MongoDB)
+                                    |
+                                    V
+                              (хранит события)
+```
+
+Event-driven design architecture description in file `event_driven_design.md`.  
+Event catalog in file `event_catalog.md`.
+
+New files:
+```
+myservice/
+├── event_consumer/
+│   ├── consumer.py
+│   ├── Dockerfile                # consumer container
+│   ├── requirements.txt
+├── src/
+│   ├── event/
+│   │   ├── event_producer.cpp
+│   │   ├── event_producer.hpp
+│   │   ├── event_types.hpp       # event structures
+├── event_catalog.md
+├── event_driven_design.md
+```
+## Running Kafka:
+To delete unused builder cash, but keep the cash used by containers you need:
+```
+docker builder prune -f
+# or if you want to delete ALL cash (reclaimable):
+docker builder prune -a -f
+```
+Build and run the containersd:
+```
+docker compose down
+docker compose build --no-cache myservice
+docker compose up -d
+```
+Kafka UI: http://localhost:8084.
+TESTING:
+```
+# Регистрация (UserRegistered)
+curl -X POST http://localhost:8082/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"login":"kafkatest","password":"123456","first_name":"Kafka","last_name":"Test","email":"kafka@test.com"}'
+
+# Логин (UserLoggedIn)
+curl -X POST http://localhost:8082/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"login":"kafkatest","password":"123456"}'
+
+# Получение токена
+TOKEN="<your-token>"
+
+# Создание проекта (ProjectCreated)
+curl -X POST http://localhost:8082/api/projects \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Kafka Project","key":"KFK1"}'
+
+# Создание задачи (TaskCreated)
+curl -X POST http://localhost:8082/api/projects/1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Kafka Task","priority":5}'
+
+# Добавление комментария (CommentAdded)
+curl -X POST http://localhost:8082/api/tasks/1/comments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"author":"Tester","text":"Test comment"}'
+```
+To see logs from consumer:
+```
+docker compose logs -f event_consumer
+```
+To see events in Kafka:
+```
+# user-events топик
+docker compose exec kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic user-events \
+  --from-beginning
+
+# task-events топик
+docker compose exec kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic task-events \
+  --from-beginning
+```
+Check data in MongoDB:
+```
+docker compose exec mongodb mongosh myservice_mongo --eval "db.user_events.find().pretty()"
+docker compose exec mongodb mongosh myservice_mongo --eval "db.task_analytics.find().pretty()"
+```
 
 ## Результаты оптимизации производительности (cache and rate limiting)
 

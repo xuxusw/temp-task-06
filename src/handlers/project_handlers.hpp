@@ -6,9 +6,14 @@
 
 // #include "storage/in_memory_storage.hpp"
 #include "storage/postgres_storage.hpp"
+#include <memory>
 
 namespace myservice::cache {
 class CacheManager;
+}
+
+namespace event {
+class EventProducer;
 }
 
 namespace myservice {
@@ -29,6 +34,7 @@ private:
     // storage::InMemoryStorage& storage_;
     storage::PostgresStorage& storage_;
     cache::CacheManager& cache_; 
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 class GetProjectsHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -46,6 +52,7 @@ private:
     // storage::InMemoryStorage& storage_;
     storage::PostgresStorage& storage_;
     cache::CacheManager& cache_; 
+    std::shared_ptr<event::EventProducer> event_producer_;
 };
 
 } // namespace handlers

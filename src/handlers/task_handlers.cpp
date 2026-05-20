@@ -5,6 +5,9 @@
 
 #include "models/task.hpp"
 
+#include "event/event_producer.hpp"
+#include <userver/logging/log.hpp>
+
 namespace myservice {
 namespace handlers {
 
@@ -13,7 +16,8 @@ CreateTaskHandler::CreateTaskHandler(
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
-      storage_(context.FindComponent<storage::PostgresStorage>()) {}
+      storage_(context.FindComponent<storage::PostgresStorage>()),
+      event_producer_(std::make_shared<event::EventProducer>(context)) {}
 
 std::string CreateTaskHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -46,6 +50,21 @@ std::string CreateTaskHandler::HandleRequestThrow(
     task.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateTask(task);
+
+    // публикация события TaskCreated
+    if (created.has_value()) {
+        event::TaskCreatedEvent event;
+        event.task_id = created->id;
+        event.project_id = created->project_id;
+        event.title = created->title;
+        event.description = created->description;
+        event.priority = created->priority;
+        event.creator_id = created->creator_id;
+        event.status = models::TaskStatusToString(created->status);
+        
+        std::string trace_id = request.GetHeader("X-Request-Id");
+        event_producer_->PublishTaskCreated(event, trace_id);
+    }
     
     userver::formats::json::ValueBuilder result;
     result["id"] = created->id;

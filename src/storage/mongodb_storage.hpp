@@ -22,6 +22,7 @@ public:
     MongoStorage(const userver::components::ComponentConfig& config,
                  const userver::components::ComponentContext& context);
 
+    //std::string InsertComment(const models::Comment& comment);
     void InsertComment(const models::Comment& comment);
     std::vector<models::Comment> GetCommentsByTask(int task_id);
     std::optional<models::Comment> GetCommentById(const std::string& id);

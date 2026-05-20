@@ -11,6 +11,10 @@ components_manager:
         #     worker_threads: 1
         #     thread_name: mon
 
+        producer-task-processor: # for kafka
+            worker_threads: 2
+            thread_name: producer-worker
+
     default_task_processor: main-task-processor
 
     components:                       # Configuring components that were registered via component_list
@@ -187,3 +191,20 @@ components_manager:
         #     handler-name: handler-monitor-api
 
         cache-manager:
+        
+        kafka-producer:
+            delivery_timeout: 10s
+            queue_buffering_max: 100ms
+            enable_idempotence: true
+            security_protocol: PLAINTEXT
+            rd_kafka_custom_options:
+                'acks': 'all'
+                'retries': '3'
+                # 'bootstrap.servers': 'kafka:9092'
+
+        secdist:
+            provider: default-secdist-provider
+
+        default-secdist-provider:
+            config: /app/configs/secdist.json
+            missing-ok: false

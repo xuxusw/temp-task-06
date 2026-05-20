@@ -10,6 +10,8 @@
 #include "rate_limit/sliding_window.hpp"
 #include <userver/logging/log.hpp>
 
+#include "event/event_producer.hpp"
+
 namespace myservice {
 namespace handlers {
 
@@ -22,7 +24,8 @@ RegisterHandler::RegisterHandler(
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
-      storage_(context.FindComponent<storage::PostgresStorage>()) {}  
+      storage_(context.FindComponent<storage::PostgresStorage>()),
+      event_producer_(std::make_shared<event::EventProducer>(context)) {}   
     
 std::string RegisterHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -56,6 +59,19 @@ std::string RegisterHandler::HandleRequestThrow(
     user.created_at = userver::storages::postgres::TimePointTz(std::chrono::system_clock::now());
     
     auto created = storage_.CreateUser(user); 
+
+    //  публикация события UserRegistered
+    if (created.has_value()) {
+        event::UserRegisteredEvent event;
+        event.user_id = created->id;
+        event.login = created->login;
+        event.email = created->email;
+        event.first_name = created->first_name;
+        event.last_name = created->last_name;
+        
+        std::string trace_id = request.GetHeader("X-Request-Id");
+        event_producer_->PublishUserRegistered(event, trace_id);
+    }
     
     // ответ
     userver::formats::json::ValueBuilder result;
@@ -76,7 +92,8 @@ LoginHandler::LoginHandler(
     const userver::components::ComponentContext& context)
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
-      storage_(context.FindComponent<storage::PostgresStorage>()) {} 
+      storage_(context.FindComponent<storage::PostgresStorage>()),
+      event_producer_(std::make_shared<event::EventProducer>(context)) {} 
 
 std::string LoginHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -123,6 +140,15 @@ std::string LoginHandler::HandleRequestThrow(
     }
     
     std::string token = auth::GenerateToken(user->id);
+
+    // публикация события UserLoggedIn
+    event::UserLoggedInEvent event;
+    event.user_id = user->id;
+    event.login = user->login;
+    event.ip_address = client_ip;
+    
+    std::string trace_id = request.GetHeader("X-Request-Id");
+    event_producer_->PublishUserLoggedIn(event, trace_id);
 
     // when login success - add limit info
     auto info = login_limiter.GetInfo(client_ip);

@@ -12,14 +12,22 @@ services:
       - DB_NAME=myservice_db
       - PG_CONNECTION=postgresql://myservice:myservice@postgres:5432/myservice_db
       - MONGO_CONNECTION=mongodb://mongodb:27017/myservice_mongo
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DATABASE=myservice_mongo
+      # - KAFKA_BROKERS=kafka-broker1:9092,kafka-broker2:9095
+      - KAFKA_BROKERS=kafka:9092
     depends_on:
       postgres:
         condition: service_healthy
       mongodb:
         condition: service_started
+      # kafka:
+      #   condition: service_started
     volumes:
       - ./configs:/app/configs:ro
     restart: unless-stopped
+    networks:
+      - myservice_network
 
   swagger-ui:
     image: swaggerapi/swagger-ui
@@ -30,6 +38,8 @@ services:
     volumes:
       - ./openapi.yaml:/openapi.yaml:ro
     restart: unless-stopped
+    networks:
+      - myservice_network
 
   postgres:
     image: postgres:14
@@ -51,19 +61,175 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - myservice_network
 
   mongodb:
     image: mongo:7
+    container_name: myservice-mongodb-1
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      # - ./mongodb:/docker-entrypoint-initdb.d:ro
       - ./mongodb/validation.js:/docker-entrypoint-initdb.d/01_validation.js:ro
       - ./mongodb/data.js:/docker-entrypoint-initdb.d/02_data.js:ro
+    networks:
+      - myservice_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
-    command: mongod --bind_ip_all
+
+  
+  # kafka-controller:
+  #   image: confluentinc/cp-kafka:7.5.0
+  #   container_name: kafka-controller
+  #   hostname: kafka-controller
+  #   ports:
+  #     - "9093:9093"
+  #   environment:
+  #     KAFKA_NODE_ID: 1
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-controller:9093,2@kafka-broker1:9093,3@kafka-broker2:9093"
+  #     KAFKA_PROCESS_ROLES: "controller"
+  #     KAFKA_LISTENERS: "CONTROLLER://0.0.0.0:9093"
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT"
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+  #     KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+  #     CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+  #   volumes:
+  #     - kafka_controller_data:/var/lib/kafka/data
+  #   networks:
+  #     - myservice_network
+
+  # kafka-broker1:
+  #   image: confluentinc/cp-kafka:7.5.0
+  #   container_name: kafka-broker1
+  #   hostname: kafka-broker1
+  #   ports:
+  #     - "9092:9092"
+  #     - "9094:9094"      
+  #     - "9097:9093" # for controller communication
+  #   depends_on:
+  #     - kafka-controller
+  #   environment:
+  #     CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+  #     KAFKA_NODE_ID: 2
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-controller:9093"
+  #     # KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-controller:9093,2@kafka-broker1:9093,3@kafka-broker2:9093"
+  #     KAFKA_PROCESS_ROLES: "broker"
+  #     KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093"
+  #     KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-broker1:9092,EXTERNAL://localhost:9094"
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+  #     KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+  #   volumes:
+  #     - kafka_broker1_data:/var/lib/kafka/data
+  #   networks:
+  #     - myservice_network
+
+  # kafka-broker2:
+  #   image: confluentinc/cp-kafka:7.5.0
+  #   container_name: kafka-broker2
+  #   hostname: kafka-broker2
+  #   ports:
+  #     - "9095:9095"
+  #     - "9096:9093" # for controller communication
+  #   depends_on:
+  #     - kafka-controller
+  #     - kafka-broker1
+  #   environment:
+  #     CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+  #     KAFKA_NODE_ID: 3
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-controller:9093"
+  #     # KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-controller:9093,2@kafka-broker1:9093,3@kafka-broker2:9093"
+  #     KAFKA_PROCESS_ROLES: "broker"
+  #     KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9095,CONTROLLER://0.0.0.0:9093"
+  #     KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-broker2:9095"
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+  #     KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+  #   volumes:
+  #     - kafka_broker2_data:/var/lib/kafka/data
+  #   networks:
+  #     - myservice_network
+
+  # для мониторинга
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8084:8084"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "myservice-kafka"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+      # KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka-broker1:9092,kafka-broker2:9095"
+      KAFKA_CLUSTERS_0_ZOOKEEPER: "" # KRaft mode - no zookeeper
+    depends_on:
+      # - kafka-broker1
+      # - kafka-broker2
+      - kafka
+    networks:
+      - myservice_network
+
+  # Event Consumer (Python)
+  event_consumer:
+    build: ./event_consumer
+    container_name: event_consumer
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      # kafka-broker1:
+      #   condition: service_started
+      kafka:
+        condition: service_started
+    environment:
+      # KAFKA_BROKERS: "kafka-broker1:9092,kafka-broker2:9095"
+      - KAFKA_BROKERS=kafka:9092
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DATABASE=myservice_mongo
+      - CONSUMER_GROUP_ID=myservice-event-group
+    networks:
+      - myservice_network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - myservice_network
 
 volumes:
   postgres_data:
   mongodb_data:
+  # kafka_controller_data:
+  # kafka_broker1_data:
+  # kafka_broker2_data:
+  kafka_data:
+
+networks:
+  myservice_network:
+    driver: bridge

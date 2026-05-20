@@ -10,6 +10,10 @@
 #include <userver/formats/bson/value.hpp>
 #include <userver/formats/bson/value_builder.hpp>
 
+#include <random>
+#include <sstream>
+#include <iomanip>
+
 namespace myservice {
 namespace models {
 
@@ -81,6 +85,18 @@ inline userver::formats::bson::Value CommentToBson(const Comment& c) {
     vb["replies"] = replies_builder.ExtractValue();
     
     return vb.ExtractValue();
+}
+
+inline std::string GenerateCommentId() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 15);
+    const char* hex = "0123456789abcdef";
+    std::stringstream ss;
+    for (int i = 0; i < 24; ++i) {
+        ss << hex[dis(gen)];
+    }
+    return ss.str();
 }
 
 }  // namespace models

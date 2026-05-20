@@ -34,6 +34,12 @@
 #include "storage/mongodb_storage.hpp"
 #include "cache/cache_manager.hpp"
 
+#include <userver/kafka/producer_component.hpp>
+// #include <userver/kafka/component.hpp>
+#include "event/event_producer.hpp"
+#include <userver/storages/secdist/component.hpp>
+#include <userver/storages/secdist/provider_component.hpp>
+
 int main(int argc, char* argv[]) {
 
     userver::server::handlers::auth::RegisterAuthCheckerFactory<myservice::auth::JwtAuthCheckerFactory>();
@@ -68,6 +74,10 @@ int main(int argc, char* argv[]) {
             .Append<myservice::handlers::GetCommentsHandler>()
             .Append<myservice::handlers::AddReplyHandler>()
             // .Append<userver::server::handlers::ServerMonitor>()
+            // .Append<userver::kafka::KafkaComponent>()
+            .Append<userver::components::Secdist>()
+            .Append<userver::components::DefaultSecdistProvider>()
+            .Append<userver::kafka::ProducerComponent>()
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);
