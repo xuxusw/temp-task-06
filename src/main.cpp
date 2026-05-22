@@ -35,8 +35,10 @@
 #include "cache/cache_manager.hpp"
 
 #include <userver/kafka/producer_component.hpp>
+#include <userver/kafka/consumer_component.hpp>
 // #include <userver/kafka/component.hpp>
 #include "event/event_producer.hpp"
+#include "event/event_consumer.hpp"
 #include <userver/storages/secdist/component.hpp>
 #include <userver/storages/secdist/provider_component.hpp>
 
@@ -78,6 +80,9 @@ int main(int argc, char* argv[]) {
             .Append<userver::components::Secdist>()
             .Append<userver::components::DefaultSecdistProvider>()
             .Append<userver::kafka::ProducerComponent>()
+            .Append<userver::kafka::ConsumerComponent>()
+            .Append<event::EventProducer>("event-producer")
+            .Append<event::EventConsumer>("event-consumer") 
         ;
 
     return userver::utils::DaemonMain(argc, argv, component_list);

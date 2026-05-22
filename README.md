@@ -30,12 +30,12 @@ Event catalog in file `event_catalog.md`.
 New files:
 ```
 myservice/
-├── event_consumer/
-│   ├── consumer.py
-│   ├── Dockerfile                # consumer container
-│   ├── requirements.txt
+├── configs/
+│   │   ├── secdist.json
 ├── src/
 │   ├── event/
+│   │   ├── event_consumer.cpp
+│   │   ├── event_producer.hpp
 │   │   ├── event_producer.cpp
 │   │   ├── event_producer.hpp
 │   │   ├── event_types.hpp       # event structures
@@ -55,8 +55,13 @@ docker compose down
 docker compose build --no-cache myservice
 docker compose up -d
 ```
-Kafka UI: http://localhost:8084.
-TESTING:
+```
+docker compose logs myservice | grep "EventConsumer"
+docker compose logs myservice | grep "EventProducer"
+```
+
+Kafka UI: http://localhost:8084.  
+### TESTING:
 ```
 # Регистрация (UserRegistered)
 curl -X POST http://localhost:8082/api/register \
@@ -89,28 +94,98 @@ curl -X POST http://localhost:8082/api/tasks/1/comments \
   -H "Content-Type: application/json" \
   -d '{"author":"Tester","text":"Test comment"}'
 ```
-To see logs from consumer:
+#### To see events in Kafka:
+Enter the container:
 ```
-docker compose logs -f event_consumer
+docker compose exec kafka bash
 ```
-To see events in Kafka:
+To see all topics:
 ```
-# user-events топик
-docker compose exec kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
+kafka-topics --list --bootstrap-server localhost:9092
+```
+To see messages from topic user-events:
+```
+kafka-console-consumer --bootstrap-server localhost:9092 \
   --topic user-events \
-  --from-beginning
-
-# task-events топик
-docker compose exec kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
+  --from-beginning \
+  --property print.key=true \
+  --property print.timestamp=true
+```
+To see messages from topic project-events:
+```
+kafka-console-consumer --bootstrap-server localhost:9092 \
+  --topic project-events \
+  --from-beginning \
+  --property print.key=true
+```
+To see messages from topic task-events:
+```
+kafka-console-consumer --bootstrap-server localhost:9092 \
   --topic task-events \
+  --from-beginning \
+  --property print.key=true
+```
+To see messages from topic comment-events:
+```
+kafka-console-consumer --bootstrap-server localhost:9092 \
+  --topic comment-events \
+  --from-beginning \
+  --property print.key=true
+```
+To see last N messages: 
+```
+kafka-console-consumer --bootstrap-server localhost:9092 \
+  --topic user-events \
+  --max-messages 10 \
   --from-beginning
 ```
-Check data in MongoDB:
+Exit Kafka container:
 ```
-docker compose exec mongodb mongosh myservice_mongo --eval "db.user_events.find().pretty()"
-docker compose exec mongodb mongosh myservice_mongo --eval "db.task_analytics.find().pretty()"
+exit
+```
+
+#### Check data in MongoDB:
+For this test some data needs to be added.  
+Enter the container:
+```
+docker compose exec mongodb mongosh
+```
+```
+use myservice_mongo
+```
+See all collections:
+```
+show collections
+```
+See raw_events (UserRegistered, UserLoggedIn):
+```
+db.raw_events.find().pretty()
+```
+```
+db.raw_events.find({event_type: "UserRegistered"}).pretty()
+```
+```
+db.raw_events.find({event_type: "UserLoggedIn"}).pretty()
+```
+See all comments:
+```
+db.comments.find().pretty()
+```
+See task_views (CQRS read model):
+```
+db.task_views.find().pretty()
+```
+See how many docs in collections:
+```
+db.raw_events.countDocuments()
+```
+See last 5 events:
+```
+db.raw_events.find().sort({timestamp: -1}).limit(5).pretty()
+```
+Exit MongoDB:
+```
+exit
 ```
 
 ## Результаты оптимизации производительности (cache and rate limiting)

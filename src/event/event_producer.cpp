@@ -4,12 +4,15 @@
 #include <iomanip>
 #include <sstream>
 #include <userver/logging/log.hpp>
+#include <userver/formats/json/serialize.hpp>
 #include <userver/formats/json/value_builder.hpp>
 
 namespace event {
 
-EventProducer::EventProducer(const userver::components::ComponentContext& context)
-    : producer_(context.FindComponent<userver::kafka::ProducerComponent>("kafka-producer").GetProducer()) {
+EventProducer::EventProducer(const userver::components::ComponentConfig& config,
+                             const userver::components::ComponentContext& context)
+    : ComponentBase(config, context),
+      producer_(context.FindComponent<userver::kafka::ProducerComponent>("kafka-producer").GetProducer()) {
     LOG_INFO() << "EventProducer initialized";
 }
 
@@ -56,14 +59,10 @@ void EventProducer::Publish(const std::string& topic,
     metadata_builder["source_service"] = "myservice";
     message_builder["metadata"] = metadata_builder.ExtractValue();
     
-    // get Value and convert to string
     userver::formats::json::Value msg_value = message_builder.ExtractValue();
-    // std::string msg_string = userver::formats::json::ToString(msg_value);
-    std::string msg_string = msg_value.As<std::string>();
+    std::string msg_string = userver::formats::json::ToString(msg_value);
     
     try {
-        // userver::kafka::Producer::Send отправляет сообщение
-        // и приостанавливает корутину до подтверждения доставки
         producer_.Send(topic, key, msg_string);
         LOG_INFO() << "Event published: " << event_type << " (topic: " << topic << ")";
     } catch (const std::exception& e) {

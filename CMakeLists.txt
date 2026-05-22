@@ -58,6 +58,7 @@ add_library(
     src/cache/cache_manager.cpp 
     src/rate_limit/sliding_window.cpp
     src/event/event_producer.cpp
+    src/event/event_consumer.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs
@@ -75,6 +76,7 @@ target_include_directories(${PROJECT_NAME}_objs PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/storage
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth
     ${CMAKE_CURRENT_SOURCE_DIR}/src/handlers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/event
 )
 
 userver_add_grpc_library(${PROJECT_NAME}_proto PROTOS handlers/hello.proto)

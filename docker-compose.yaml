@@ -179,26 +179,26 @@ services:
     networks:
       - myservice_network
 
-  # Event Consumer (Python)
-  event_consumer:
-    build: ./event_consumer
-    container_name: event_consumer
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      # kafka-broker1:
-      #   condition: service_started
-      kafka:
-        condition: service_started
-    environment:
-      # KAFKA_BROKERS: "kafka-broker1:9092,kafka-broker2:9095"
-      - KAFKA_BROKERS=kafka:9092
-      - MONGO_URI=mongodb://mongodb:27017
-      - MONGO_DATABASE=myservice_mongo
-      - CONSUMER_GROUP_ID=myservice-event-group
-    networks:
-      - myservice_network
-    restart: unless-stopped
+  # # Event Consumer (Python)
+  # event_consumer:
+  #   build: ./event_consumer
+  #   container_name: event_consumer
+  #   depends_on:
+  #     mongodb:
+  #       condition: service_healthy
+  #     # kafka-broker1:
+  #     #   condition: service_started
+  #     kafka:
+  #       condition: service_started
+  #   environment:
+  #     # KAFKA_BROKERS: "kafka-broker1:9092,kafka-broker2:9095"
+  #     - KAFKA_BROKERS=kafka:9092
+  #     - MONGO_URI=mongodb://mongodb:27017
+  #     - MONGO_DATABASE=myservice_mongo
+  #     - CONSUMER_GROUP_ID=myservice-event-group
+  #   networks:
+  #     - myservice_network
+  #   restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0

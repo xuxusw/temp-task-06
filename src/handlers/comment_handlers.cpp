@@ -17,7 +17,8 @@ AddCommentHandler::AddCommentHandler(
     : HttpHandlerBase(config, context),
       mongo_storage_(context.FindComponent<storage::MongoStorage>()),
       cache_(context.FindComponent<cache::CacheManager>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
  
 std::string AddCommentHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -46,7 +47,7 @@ std::string AddCommentHandler::HandleRequestThrow(
     event.text = comment.text;
  
     std::string trace_id = request.GetHeader("X-Request-Id");
-    event_producer_->PublishCommentAdded(event, trace_id);
+    event_producer_.PublishCommentAdded(event, trace_id);
  
     std::string cache_key = "comments:task:" + std::to_string(task_id);
     cache_.Invalidate(cache_key);
@@ -111,7 +112,8 @@ AddReplyHandler::AddReplyHandler(
     : HttpHandlerBase(config, context),
       mongo_storage_(context.FindComponent<storage::MongoStorage>()),
       cache_(context.FindComponent<cache::CacheManager>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
  
 std::string AddReplyHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -140,7 +142,7 @@ std::string AddReplyHandler::HandleRequestThrow(
     event.text = reply.text;
     
     std::string trace_id = request.GetHeader("X-Request-Id");
-    event_producer_->PublishCommentAdded(event, trace_id);
+    event_producer_.PublishCommentAdded(event, trace_id);
  
     // cache invalidation
     if (task_id > 0) {

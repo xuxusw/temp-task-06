@@ -30,7 +30,8 @@ public:
 private:
     // storage::InMemoryStorage& storage_;  // ссылка 
     storage::PostgresStorage& storage_; 
-    std::shared_ptr<event::EventProducer> event_producer_;
+    // std::shared_ptr<event::EventProducer> event_producer_;
+    event::EventProducer& event_producer_;
 };
 
 class LoginHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -47,7 +48,8 @@ public:
 private:
     // storage::InMemoryStorage& storage_;  // ссылка
     storage::PostgresStorage& storage_;
-    std::shared_ptr<event::EventProducer> event_producer_;
+    // std::shared_ptr<event::EventProducer> event_producer_;
+    event::EventProducer& event_producer_;
 };
 
 } // namespace handlers

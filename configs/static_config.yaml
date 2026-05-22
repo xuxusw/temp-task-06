@@ -15,6 +15,14 @@ components_manager:
             worker_threads: 2
             thread_name: producer-worker
 
+        consumer-task-processor: # for kafka
+            worker_threads: 2
+            thread_name: consumer-worker
+        
+        consumer-blocking-task-processor: # for kafka
+            worker_threads: 2
+            thread_name: consumer-blocking-worker
+
     default_task_processor: main-task-processor
 
     components:                       # Configuring components that were registered via component_list
@@ -201,6 +209,17 @@ components_manager:
                 'acks': 'all'
                 'retries': '3'
                 # 'bootstrap.servers': 'kafka:9092'
+
+        kafka-consumer:
+            group_id: myservice-event-group
+            topics: ["user-events", "project-events", "task-events", "comment-events"]
+            auto_offset_reset: earliest
+            max_batch_size: 5
+            poll_timeout: 500ms
+            security_protocol: PLAINTEXT
+
+        event-producer: {}
+        event-consumer: {}
 
         secdist:
             provider: default-secdist-provider

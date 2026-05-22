@@ -19,7 +19,8 @@ CreateProjectHandler::CreateProjectHandler(
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
       cache_(context.FindComponent<cache::CacheManager>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
 
 std::string CreateProjectHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -56,7 +57,7 @@ std::string CreateProjectHandler::HandleRequestThrow(
         event.owner_id = created->owner_id;
         
         std::string trace_id = request.GetHeader("X-Request-Id");
-        event_producer_->PublishProjectCreated(event, trace_id);
+        event_producer_.PublishProjectCreated(event, trace_id);
     }
     
     userver::formats::json::ValueBuilder result;
@@ -77,7 +78,8 @@ GetProjectsHandler::GetProjectsHandler(
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
-      cache_(context.FindComponent<cache::CacheManager>()) {}
+      cache_(context.FindComponent<cache::CacheManager>()),
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
 
 std::string GetProjectsHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,

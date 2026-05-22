@@ -25,7 +25,8 @@ RegisterHandler::RegisterHandler(
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {}   
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}   
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
     
 std::string RegisterHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -70,7 +71,7 @@ std::string RegisterHandler::HandleRequestThrow(
         event.last_name = created->last_name;
         
         std::string trace_id = request.GetHeader("X-Request-Id");
-        event_producer_->PublishUserRegistered(event, trace_id);
+        event_producer_.PublishUserRegistered(event, trace_id);
     }
     
     // ответ
@@ -93,7 +94,8 @@ LoginHandler::LoginHandler(
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {} 
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      event_producer_(context.FindComponent<event::EventProducer>()) {} 
 
 std::string LoginHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -148,7 +150,7 @@ std::string LoginHandler::HandleRequestThrow(
     event.ip_address = client_ip;
     
     std::string trace_id = request.GetHeader("X-Request-Id");
-    event_producer_->PublishUserLoggedIn(event, trace_id);
+    event_producer_.PublishUserLoggedIn(event, trace_id);
 
     // when login success - add limit info
     auto info = login_limiter.GetInfo(client_ip);

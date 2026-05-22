@@ -32,7 +32,8 @@ public:
 private:
     storage::MongoStorage& mongo_storage_;
     cache::CacheManager& cache_;
-    std::shared_ptr<event::EventProducer> event_producer_;
+    // std::shared_ptr<event::EventProducer> event_producer_;
+    event::EventProducer& event_producer_;
 };
 
 class GetCommentsHandler final : public userver::server::handlers::HttpHandlerBase {
@@ -65,7 +66,8 @@ public:
 private:
     storage::MongoStorage& mongo_storage_;
     cache::CacheManager& cache_;
-    std::shared_ptr<event::EventProducer> event_producer_;
+    // std::shared_ptr<event::EventProducer> event_producer_;
+    event::EventProducer& event_producer_;
 };
 
 }  // namespace handlers

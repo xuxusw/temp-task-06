@@ -2,15 +2,21 @@
 
 #include <memory>
 #include <string>
+#include <userver/components/component_base.hpp>
 #include <userver/components/component_context.hpp>
 #include <userver/kafka/producer_component.hpp>
 #include "event_types.hpp"
 
 namespace event {
 
-class EventProducer {
+class EventProducer final : public userver::components::ComponentBase {
 public:
-    EventProducer(const userver::components::ComponentContext& context);
+    static constexpr std::string_view kName = "event-producer";
+    
+    EventProducer(const userver::components::ComponentConfig& config,
+                  const userver::components::ComponentContext& context);
+    
+    ~EventProducer() override = default;
     
     void PublishUserRegistered(const UserRegisteredEvent& event, 
                                 const std::string& trace_id = "");
@@ -33,7 +39,7 @@ private:
     std::string GenerateEventId();
     std::string GetCurrentTimestampISO();
     
-    const userver::kafka::Producer& producer_; // const
+    const userver::kafka::Producer& producer_;
 };
 
 } // namespace event

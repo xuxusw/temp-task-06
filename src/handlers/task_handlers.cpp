@@ -17,7 +17,8 @@ CreateTaskHandler::CreateTaskHandler(
     : HttpHandlerBase(config, context),
       // storage_(context.FindComponent<storage::InMemoryStorage>()) {}
       storage_(context.FindComponent<storage::PostgresStorage>()),
-      event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      // event_producer_(std::make_shared<event::EventProducer>(context)) {}
+      event_producer_(context.FindComponent<event::EventProducer>()) {}
 
 std::string CreateTaskHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
@@ -63,7 +64,7 @@ std::string CreateTaskHandler::HandleRequestThrow(
         event.status = models::TaskStatusToString(created->status);
         
         std::string trace_id = request.GetHeader("X-Request-Id");
-        event_producer_->PublishTaskCreated(event, trace_id);
+        event_producer_.PublishTaskCreated(event, trace_id);
     }
     
     userver::formats::json::ValueBuilder result;

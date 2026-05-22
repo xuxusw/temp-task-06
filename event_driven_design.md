@@ -15,7 +15,7 @@
                                        v
                                 ┌─────────────┐
                                 │    Kafka    │
-                                │  (3 brokers)│
+                                │  (1 broker) │
                                 └──────┬──────┘
                                        │ Consumer reads
                                        v
@@ -32,13 +32,13 @@
 
 ## Components
 
-| Component | Technology | Role |
-|-----------|------------|------|
-| **myservice** | C++20 + userver | HTTP API + Kafka Producer |
-| **Kafka Cluster** | Apache Kafka 7.5.0 | Message broker (3 brokers) |
-| **Event Consumer** | Python 3.11 | Consumes events, writes to MongoDB |
-| **PostgreSQL** | PostgreSQL 14 | Source of truth (Commands) |
-| **MongoDB** | MongoDB 7 | Read model + Event storage |
+| Component | Role |
+|-----------|------|
+| **myservice** | HTTP API + Kafka Producer |
+| **Kafka Cluster** | Message broker (currently 1 broker) |
+| **Event Consumer** | Consumes events, writes to MongoDB |
+| **PostgreSQL** | Source of truth (Commands) |
+| **MongoDB** | Read model + Event storage |
 
 ## Data Flow
 ```
@@ -67,8 +67,6 @@ POST /api/tasks/{id}/comments -> CommentAdded -> comment-events topic -> Consume
 | **Идемпотентность** | Consumer использует `event_id` как unique index в MongoDB |
 | **Replication** | replication_factor=3 на всех топиках |
 
-Exactly-once требует двухфазного коммита между Kafka и MongoDB, что усложняет систему и снижает производительность.
-
 ## CQRS
 ### Разделение операций
 | Тип | Операции | Хранилище |
@@ -82,4 +80,3 @@ Exactly-once требует двухфазного коммита между Kaf
 |POST /api/projects|ProjectCreated|Consumer обновляет project_events collection|
 |POST /api/tasks|TaskCreated|Consumer обновляет task_analytics collection|
 |POST /api/comments|CommentAdded|Consumer обновляет comment_events collection + инвалидирует кеш|
-
